@@ -27,10 +27,9 @@ local OriginalCameraSettings = {
     CameraMaxZoomDistance = lp.CameraMaxZoomDistance
 }
 
--- ПОЛНАЯ ГЛОБАЛЬНАЯ ТАБЛИЦА ФЛАГОВ ЧИТ-СИСТЕМЫ (СОХРАНЕНЫ ВСЕ ВАШИ ОРИГИНАЛЬНЫЕ ФУНКЦИИ)
+-- ПОЛНАЯ ГЛОБАЛЬНАЯ ТАБЛИЦА ФЛАГОВ ЧИТ-СИСТЕМЫ
 _G.BrosaHub = {
     Flags = {
-        -- Исходные функции вредительства и троллинга из вашей первой части:
         FlingAura = false,
         ClickFling = false,
         FlingAll = false,
@@ -47,8 +46,6 @@ _G.BrosaHub = {
         Fly = false,
         Noclip = false,
         ClickTP = false,
-
-        -- Новые интегрированные функции визуализации, захвата и контроля:
         GrabEnabled = false,
         EspNames = false,
         EspBoxes = false,
@@ -59,9 +56,7 @@ _G.BrosaHub = {
         LockMobileButtons = false
     },
     AuraRadius = 25,
-    SelectedPlayer = "", -- Сюда передается ник жертвы из списка для ваших родных функций
-
-    -- Конфигурация кинетического удержания и бросков:
+    SelectedPlayer = "",
     GrabConfig = {
         Radius = 150,
         MaxDistance = 500,
@@ -83,7 +78,7 @@ if lp:WaitForChild("PlayerGui"):FindFirstChild("Telzo_iOS_v52") then
     lp.PlayerGui["Telzo_iOS_v52"]:Destroy()
 end
 
--- Создание ScreenGui строго в PlayerGui для обхода багов Delta
+-- Создание ScreenGui строго в PlayerGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Telzo_iOS_v52"
 ScreenGui.ResetOnSpawn = false
@@ -99,7 +94,7 @@ StarCanvas.BackgroundTransparency = 1
 StarCanvas.ClipsDescendants = true
 StarCanvas.ZIndex = 1
 
--- Главный фрейм панели (Размытая темная вода iOS Style)
+-- Главный фрейм панели
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 470, 0, 460)
@@ -137,7 +132,7 @@ local BtnStroke = Instance.new("UIStroke", FloatingBtn)
 BtnStroke.Color = Color3.fromRGB(255, 215, 0)
 BtnStroke.Thickness = 1.5
 
--- Круг FOV для Аима/Захвата игрока (По центру экрана)
+-- Круг FOV для Аима/Захвата игрока
 local FovCircle = Drawing.new("Circle")
 FovCircle.Thickness = 1.5
 FovCircle.Color = Color3.fromRGB(255, 60, 60)
@@ -145,7 +140,7 @@ FovCircle.Filled = false
 FovCircle.Transparency = 0.7
 FovCircle.Visible = false
 
--- Линия трекера (Трассер от прицела к хитбоксу при захвате)
+-- Линия трекера
 local SnapLine = Drawing.new("Line")
 SnapLine.Thickness = 2
 SnapLine.Color = Color3.fromRGB(0, 255, 150)
@@ -153,7 +148,7 @@ SnapLine.Transparency = 0.9
 SnapLine.Visible = false
 
 -- ============================================================================
--- 📱 СОЗДАНИЕ ОТДЕЛЬНЫХ ЭКРАННЫХ КНОПОК ДЛЯ УПРАВЛЕНИЯ МОБИЛЬНЫМ ЗАХВАТАМИ
+-- 📱 СОЗДАНИЕ ОТДЕЛЬНЫХ ЭКРАННЫХ КНОПОК
 -- ============================================================================
 
 local MobileControlsFrame = Instance.new("Frame", ScreenGui)
@@ -310,7 +305,7 @@ task.spawn(function()
     end
 end)
 
--- Система плавного перемещения (Кастомный драггинг)
+-- Система плавного перемещения
 local function applyDrag(uiElement)
     local dragging, dragInput, dragStart, startPos
     uiElement.InputBegan:Connect(function(input)
@@ -361,7 +356,7 @@ applyDrag(FloatingBtn)
 applyDrag(MobileControlsFrame)
 
 -- ============================================================================
--- 📱 РЕНДЕРИНГ ВНУТРЕННЕГО ИНТЕРФЕЙСА СТРОГО iOS STYLE
+-- 📱 РЕНДЕРИНГ ВНУТРЕННЕГО ИНТЕРФЕЙСА
 -- ============================================================================
 
 local TopBar = Instance.new("Frame", MainFrame)
@@ -385,7 +380,7 @@ ContentContainer.Size = UDim2.new(1, -20, 1, -65)
 ContentContainer.Position = UDim2.new(0, 10, 0, 55)
 ContentContainer.BackgroundTransparency = 1
 ContentContainer.BorderSizePixel = 0
-ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 1550) -- Увеличен скролл под абсолютно все функции
+ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 1550)
 ContentContainer.ScrollBarThickness = 3
 ContentContainer.ZIndex = 3
 
@@ -553,7 +548,7 @@ local function createDropdown(name, options, defaultConfig, subKey, callback)
     end)
 end
 
--- ВЫВОД ВСЕХ ВАШИХ РОДНЫХ И ОРИГИНАЛЬНЫХ ФУНКЦИЙ В МЕНЮ
+-- ВЫВОД ВСЕХ ФУНКЦИЙ В МЕНЮ
 createToggle("Fling Aura", "FlingAura")
 createToggle("Click Fling", "ClickFling")
 createToggle("Fling All", "FlingAll")
@@ -816,7 +811,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ============================================================================
--- 💃 СИСТЕМА ВОСПРОИЗВЕДЕНИЯ ВСЕХ БАЗОВЫХ, КЛАССИЧЕСКИХ И ПРЕМИУМ АНИМАЦИЙ
+-- 💃 СИСТЕМА ВОСПРОИЗВЕДЕНИЯ ВСЕХ АНИМАЦИЙ
 -- ============================================================================
 
 local AnimationSection = Instance.new("Frame", ContentContainer)
@@ -881,7 +876,7 @@ for _, animData in ipairs(allRobloxAnimations) do
     end)
 end
 
--- Подвал разработчиков (Credits)
+-- Подвал разработчиков
 local CreditsFrame = Instance.new("Frame", ContentContainer)
 CreditsFrame.Size = UDim2.new(1, -10, 0, 65)
 CreditsFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
