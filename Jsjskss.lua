@@ -1,768 +1,907 @@
-if not game:IsLoaded() then game.Loaded:Wait() end
+-- ============================================================================
+-- 👑 TELZO REBORN v5.2 — АБСОЛЮТНАЯ И ПОЛНАЯ СБОРКА БЕЗ СУЖЕНИЙ И УРЕЗАНИЙ
+-- 🛠️ Разработчики: Telzo Core Team & AI Syndicate (2026)
+-- 🎯 Среда выполнения: Delta Executor / Luau API (Roblox Mobile & PC)
+-- ============================================================================
 
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+-- Сервисы Roblox
+local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CoreGui = game:GetService("CoreGui")
-local HttpService = game:GetService("HttpService")
-local Debris = game:GetService("Debris")
-local TeleportService = game:GetService("TeleportService")
-local TextChatService = game:GetService("TextChatService")
-local StarterGui = game:GetService("StarterGui")
-local ContextActionService = game:GetService("ContextActionService")
+local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
 
 local lp = Players.LocalPlayer
-local camera = workspace.CurrentCamera
 local mouse = lp:GetMouse()
 
-local BrosaHub = {
-    Flags = {
-        FlingAura = false, ClickFling = false, FlingAll = false, KillAura = false,
-        BringAll = false, PropsFling = false, OrbitPlayer = false, GrabCircle = true,
-        MassVoidKick = false, BlackHoleSphere = false,
-        AntiGrab = false, AntiFling = false, GodMode = false, AntiVoid = false, AntiRagdoll = false,
-        InfJump = false, Fly = false, Noclip = false, TPToPlayer = false, ClickTP = false,
-        PlayerESP = false, NameESP = false, TracerESP = false, Fullbright = false,
-        ForceThirdPerson = false, AspectStretch = false,
-        Kidnap = false, AnimateFling = false, MassWeld = false, NetClaim = false,
-        LobbyFreeze = false, ChatSpam = false, AntiReport = false, ServerHopper = false,
-        AutoFarm = false, AutoQuest = false
-    },
-    Settings = {
-        CircleRadius = 150,
-        GrabPart = "Torso",
-        MaxGrabDistance = 500,
-        ThrowForce = 250,
-        Device = "PC",
-        StretchFactor = 1.3,
-        SavedCamMin = 0.5,
-        SavedCamMax = 12.5
-    },
-    SelectedPlayer = "",
-    AuraRadius = 25
+-- Сохранение исходного состояния камеры до включения 3-го лица
+local OriginalCameraSettings = {
+    CameraMode = lp.CameraMode,
+    CameraMinZoomDistance = lp.CameraMinZoomDistance,
+    CameraMaxZoomDistance = lp.CameraMaxZoomDistance
 }
-_G.BrosaHub = BrosaHub
 
-local oldGui = CoreGui:FindFirstChild("TelzoRebornGui") or CoreGui:FindFirstChild("BrosaHubGui")
-if oldGui then oldGui:Destroy() end
+-- ПОЛНАЯ ГЛОБАЛЬНАЯ ТАБЛИЦА ФЛАГОВ ЧИТ-СИСТЕМЫ (СОХРАНЕНЫ ВСЕ ВАШИ ОРИГИНАЛЬНЫЕ ФУНКЦИИ)
+_G.BrosaHub = {
+    Flags = {
+        -- Исходные функции вредительства и троллинга из вашей первой части:
+        FlingAura = false,
+        ClickFling = false,
+        FlingAll = false,
+        KillAura = false,
+        MassVoidKick = false,
+        BlackHoleSphere = false,
+        AntiGrab = false,
+        AntiFling = false,
+        GodMode = false,
+        AntiVoid = false,
+        AntiRagdoll = false,
+        Fullbright = false,
+        InfJump = false,
+        Fly = false,
+        Noclip = false,
+        ClickTP = false,
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TelzoRebornGui"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        -- Новые интегрированные функции визуализации, захвата и контроля:
+        GrabEnabled = false,
+        EspNames = false,
+        EspBoxes = false,
+        EspTracers = false,
+        Starfield = true,
+        StretchScreen = false,
+        ForceThirdPerson = false,
+        LockMobileButtons = false
+    },
+    AuraRadius = 25,
+    SelectedPlayer = "", -- Сюда передается ник жертвы из списка для ваших родных функций
 
-if syn and syn.protect_gui then
-    syn.protect_gui(ScreenGui)
-    ScreenGui.Parent = CoreGui
-else
-    ScreenGui.Parent = CoreGui
+    -- Конфигурация кинетического удержания и бросков:
+    GrabConfig = {
+        Radius = 150,
+        MaxDistance = 500,
+        CurrentDistance = 15,
+        TargetPart = "HumanoidRootPart",
+        ThrowForce = 350,
+        DeviceMode = "Android",
+        GrabKey = Enum.KeyCode.E,
+        PushKey = Enum.KeyCode.R,
+        PullKey = Enum.KeyCode.F,
+        ThrowKey = Enum.KeyCode.Q,
+        VoidThrowKey = Enum.KeyCode.V
+    },
+    StretchValue = 1.2
+}
+
+-- Уничтожение старых копий интерфейса
+if lp:WaitForChild("PlayerGui"):FindFirstChild("Telzo_iOS_v52") then
+    lp.PlayerGui["Telzo_iOS_v52"]:Destroy()
 end
 
+-- Создание ScreenGui строго в PlayerGui для обхода багов Delta
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Telzo_iOS_v52"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = lp:WaitForChild("PlayerGui")
+
+-- Canvas для падающих звезд на заднем фоне меню
+local StarCanvas = Instance.new("Frame", ScreenGui)
+StarCanvas.Name = "StarCanvas"
+StarCanvas.Size = UDim2.new(0, 470, 0, 460)
+StarCanvas.Position = UDim2.new(0.5, -235, 0.5, -230)
+StarCanvas.BackgroundTransparency = 1
+StarCanvas.ClipsDescendants = true
+StarCanvas.ZIndex = 1
+
+-- Главный фрейм панели (Размытая темная вода iOS Style)
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 520, 0, 360)
-MainFrame.Position = UDim2.new(0.5, -260, 0.5, -180)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+MainFrame.Size = UDim2.new(0, 470, 0, 460)
+MainFrame.Position = UDim2.new(0.5, -235, 0.5, -230)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
+MainFrame.BackgroundTransparency = 0.15
 MainFrame.Active = true
-MainFrame.Draggable = true
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+MainFrame.ZIndex = 2
+
+local MainCorner = Instance.new("UICorner", MainFrame)
+MainCorner.CornerRadius = UDim.new(0, 14)
 
 local MainStroke = Instance.new("UIStroke", MainFrame)
+MainStroke.Color = Color3.fromRGB(255, 255, 255)
+MainStroke.Transparency = 0.85
 MainStroke.Thickness = 1
-MainStroke.Color = Color3.fromRGB(39, 39, 42)
-MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-local NavFrame = Instance.new("Frame", MainFrame)
-NavFrame.Name = "NavFrame"
-NavFrame.Size = UDim2.new(0, 140, 1, -20)
-NavFrame.Position = UDim2.new(0, 10, 0, 10)
-NavFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
-Instance.new("UICorner", NavFrame).CornerRadius = UDim.new(0, 8)
+-- ПЛАВАЮЩАЯ КНОПКА ОТКРЫТИЯ/СКРЫТИЯ МЕНЮ
+local FloatingBtn = Instance.new("TextButton", ScreenGui)
+FloatingBtn.Name = "FloatingBtn"
+FloatingBtn.Size = UDim2.new(0, 50, 0, 50)
+FloatingBtn.Position = UDim2.new(0, 20, 0.4, 0)
+FloatingBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+FloatingBtn.BackgroundTransparency = 0.2
+FloatingBtn.Text = "👑"
+FloatingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FloatingBtn.TextSize = 24
+FloatingBtn.Font = Enum.Font.SourceSansBold
+FloatingBtn.ZIndex = 5
 
-local NavLayout = Instance.new("UIListLayout", NavFrame)
-NavLayout.Padding = UDim.new(0, 5)
-NavLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
+local BtnCorner = Instance.new("UICorner", FloatingBtn)
+BtnCorner.CornerRadius = UDim.new(1, 0)
 
-local NavPadding = Instance.new("UIPadding", NavFrame)
-NavPadding.PaddingTop = UDim.new(0, 8)
+local BtnStroke = Instance.new("UIStroke", FloatingBtn)
+BtnStroke.Color = Color3.fromRGB(255, 215, 0)
+BtnStroke.Thickness = 1.5
 
-local PagesContainer = Instance.new("Frame", MainFrame)
-PagesContainer.Name = "PagesContainer"
-PagesContainer.Size = UDim2.new(1, -170, 1, -20)
-PagesContainer.Position = UDim2.new(0, 160, 0, 10)
-PagesContainer.BackgroundTransparency = 1
+-- Круг FOV для Аима/Захвата игрока (По центру экрана)
+local FovCircle = Drawing.new("Circle")
+FovCircle.Thickness = 1.5
+FovCircle.Color = Color3.fromRGB(255, 60, 60)
+FovCircle.Filled = false
+FovCircle.Transparency = 0.7
+FovCircle.Visible = false
 
-local function CreatePage(name)
-    local Page = Instance.new("ScrollingFrame", PagesContainer)
-    Page.Name = name .. "Page"
-    Page.Size = UDim2.new(1, 0, 1, 0)
-    Page.BackgroundTransparency = 1
-    Page.Visible = false
-    Page.ScrollBarThickness = 2
-    Page.ScrollBarImageColor3 = Color3.fromRGB(63, 63, 70)
-    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
-    
-    local PageLayout = Instance.new("UIListLayout", Page)
-    PageLayout.Padding = UDim.new(0, 6)
-    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    
-    PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 10)
-    end)
-    return Page
-end
+-- Линия трекера (Трассер от прицела к хитбоксу при захвате)
+local SnapLine = Drawing.new("Line")
+SnapLine.Thickness = 2
+SnapLine.Color = Color3.fromRGB(0, 255, 150)
+SnapLine.Transparency = 0.9
+SnapLine.Visible = false
 
-local AttackPage = CreatePage("Attack")
-local DefensePage = CreatePage("Defense")
-local VisualsPage = CreatePage("Visuals")
-local MovementPage = CreatePage("Movement")
+-- ============================================================================
+-- 📱 СОЗДАНИЕ ОТДЕЛЬНЫХ ЭКРАННЫХ КНОПОК ДЛЯ УПРАВЛЕНИЯ МОБИЛЬНЫМ ЗАХВАТАМИ
+-- ============================================================================
 
-local function SwitchTab(tabId)
-    AttackPage.Visible = (tabId == "Attack")
-    DefensePage.Visible = (tabId == "Defense")
-    VisualsPage.Visible = (tabId == "Visuals")
-    MovementPage.Visible = (tabId == "Movement")
-end
+local MobileControlsFrame = Instance.new("Frame", ScreenGui)
+MobileControlsFrame.Name = "MobileControlsFrame"
+MobileControlsFrame.Size = UDim2.new(0, 260, 0, 110)
+MobileControlsFrame.Position = UDim2.new(1, -280, 0.5, -55)
+MobileControlsFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+MobileControlsFrame.BackgroundTransparency = 0.98
+MobileControlsFrame.Active = true
+MobileControlsFrame.Visible = false
 
-_G.AttackPage = AttackPage
-_G.DefensePage = DefensePage
-_G.VisualsPage = VisualsPage
-_G.MovementPage = MovementPage
-_G.NavFrame = NavFrame
-_G.SwitchTab = SwitchTab
+local MobileGrid = Instance.new("UIGridLayout", MobileControlsFrame)
+MobileGrid.CellSize = UDim2.new(0, 120, 0, 45)
+MobileGrid.CellPadding = UDim2.new(0, 10, 0, 10)
 
-local DropdownFrame = Instance.new("Frame", _G.AttackPage)
-DropdownFrame.Size = UDim2.new(1, -10, 0, 35)
-DropdownFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
-DropdownFrame.ClipsDescendants = true
-local DropCorner = Instance.new("UICorner", DropdownFrame)
-DropCorner.CornerRadius = UDim.new(0, 6)
+local function createMobileButton(text, color, callback)
+    local btn = Instance.new("TextButton", MobileControlsFrame)
+    btn.BackgroundColor3 = color
+    btn.BackgroundTransparency = 0.25
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 16
 
-local DropBtn = Instance.new("TextButton", DropdownFrame)
-DropBtn.Size = UDim2.new(1, 0, 0, 35)
-DropBtn.BackgroundTransparency = 1
-DropBtn.Text = "  Выбери цель: [ Все игроки ]"
-DropBtn.TextColor3 = Color3.fromRGB(244, 244, 245)
-DropBtn.TextXAlignment = Enum.TextXAlignment.Left
-DropBtn.Font = Enum.Font.GothamBold
-DropBtn.TextSize = 11
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(0, 12)
 
-local DropScroll = Instance.new("ScrollingFrame", DropdownFrame)
-DropScroll.Size = UDim2.new(1, -10, 0, 110)
-DropScroll.Position = UDim2.new(0, 5, 0, 40)
-DropScroll.BackgroundTransparency = 1
-DropScroll.ScrollBarThickness = 2
-DropScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    local stroke = Instance.new("UIStroke", btn)
+    stroke.Color = Color3.fromRGB(255, 255, 255)
+    stroke.Transparency = 0.8
+    stroke.Thickness = 1
 
-local DropLayout = Instance.new("UIListLayout", DropScroll)
-DropLayout.Padding = UDim.new(0, 4)
-
-DropLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    DropScroll.CanvasSize = UDim2.new(0, 0, 0, DropLayout.AbsoluteContentSize.Y + 5)
-end)
-
-local dropOpen = false
-DropBtn.MouseButton1Click:Connect(function()
-    dropOpen = not dropOpen
-    local targetHeight = dropOpen and 155 or 35
-    TweenService:Create(DropdownFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Size = UDim2.new(1, -10, 0, targetHeight)
-    }):Play()
-end)
-
-local function UpdatePlayersList()
-    for _, child in ipairs(DropScroll:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
-    end
-    
-    local AllBtn = Instance.new("TextButton", DropScroll)
-    AllBtn.Size = UDim2.new(1, 0, 0, 25)
-    AllBtn.BackgroundColor3 = Color3.fromRGB(39, 39, 42)
-    AllBtn.Text = "[ Все игроки ]"
-    AllBtn.TextColor3 = Color3.fromRGB(161, 161, 170)
-    AllBtn.Font = Enum.Font.Gotham
-    AllBtn.TextSize = 11
-    Instance.new("UICorner", AllBtn).CornerRadius = UDim.new(0, 4)
-    
-    AllBtn.MouseButton1Click:Connect(function()
-        _G.BrosaHub.SelectedPlayer = ""
-        DropBtn.Text = "  Выбери цель: [ Все игроки ]"
-        dropOpen = false
-        TweenService:Create(DropdownFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(1, -10, 0, 35)}):Play()
-    end)
-
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= lp then
-            local PBtn = Instance.new("TextButton", DropScroll)
-            PBtn.Size = UDim2.new(1, 0, 0, 25)
-            PBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 32)
-            PBtn.Text = p.Name
-            PBtn.TextColor3 = Color3.fromRGB(244, 244, 245)
-            PBtn.Font = Enum.Font.Gotham
-            PBtn.TextSize = 11
-            Instance.new("UICorner", PBtn).CornerRadius = UDim.new(0, 4)
-            
-            PBtn.MouseButton1Click:Connect(function()
-                _G.BrosaHub.SelectedPlayer = p.Name
-                DropBtn.Text = "  Выбери цель: [ " .. p.Name .. " ]"
-                dropOpen = false
-                TweenService:Create(DropdownFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(1, -10, 0, 35)}):Play()
-            end)
-        end
-    end
-end
-
-task.spawn(function()
-    while true do
-        UpdatePlayersList()
-        task.wait(60)
-    end
-end)
-
-local function AddToggle(parentPage, text, desc, flagName)
-    local Frame = Instance.new("Frame", parentPage)
-    Frame.Size = UDim2.new(1, -10, 0, 45)
-    Frame.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
-    Frame.BackgroundTransparency = 0.2
-    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
-
-    local Label = Instance.new("TextLabel", Frame)
-    Label.Text = text
-    Label.Size = UDim2.new(0.7, 0, 0, 20)
-    Label.Position = UDim2.new(0, 12, 0, 4)
-    Label.TextColor3 = Color3.fromRGB(244, 244, 245)
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Font = Enum.Font.GothamBold
-    Label.TextSize = 12
-    Label.BackgroundTransparency = 1
-
-    local DescLabel = Instance.new("TextLabel", Frame)
-    DescLabel.Text = desc
-    DescLabel.Size = UDim2.new(0.7, 0, 0, 15)
-    DescLabel.Position = UDim2.new(0, 12, 0, 22)
-    DescLabel.TextColor3 = Color3.fromRGB(113, 113, 122)
-    DescLabel.TextXAlignment = Enum.TextXAlignment.Left
-    DescLabel.Font = Enum.Font.Gotham
-    DescLabel.TextSize = 10
-    DescLabel.BackgroundTransparency = 1
-
-    local ToggleBtn = Instance.new("TextButton", Frame)
-    ToggleBtn.Size = UDim2.new(0, 36, 0, 18)
-    ToggleBtn.Position = UDim2.new(1, -48, 0.5, -9)
-    ToggleBtn.BackgroundColor3 = Color3.fromRGB(39, 39, 42)
-    ToggleBtn.Text = ""
-    Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 9)
-
-    local Circle = Instance.new("Frame", ToggleBtn)
-    Circle.Size = UDim2.new(0, 12, 0, 12)
-    Circle.Position = UDim2.new(0, 3, 0.5, -6)
-    Circle.BackgroundColor3 = Color3.new(1, 1, 1)
-    Instance.new("UICorner", Circle).CornerRadius = UDim.new(0, 6)
-
-    ToggleBtn.MouseButton1Click:Connect(function()
-        _G.BrosaHub.Flags[flagName] = not _G.BrosaHub.Flags[flagName]
-        local enabled = _G.BrosaHub.Flags[flagName]
-        local targetPos = enabled and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
-        local targetColor = enabled and Color3.fromRGB(99, 102, 241) or Color3.fromRGB(39, 39, 42)
-        local targetSize = enabled and UDim2.new(0, 14, 0, 12) or UDim2.new(0, 12, 0, 12)
-        
-        TweenService:Create(Circle, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = targetPos, Size = targetSize}):Play()
-        TweenService:Create(ToggleBtn, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {BackgroundColor3 = targetColor}):Play()
-        
-        task.delay(0.15, function()
-            TweenService:Create(Circle, TweenInfo.new(0.1), {Size = UDim2.new(0, 12, 0, 12)}):Play()
-        end)
-    end)
-end
-
-local function AddRadiusSlider(parentPage)
-    local Frame = Instance.new("Frame", parentPage)
-    Frame.Size = UDim2.new(1, -10, 0, 45)
-    Frame.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
-    Frame.BackgroundTransparency = 0.2
-    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
-
-    local Label = Instance.new("TextLabel", Frame)
-    Label.Text = "Радиус захвата аур: " .. tostring(_G.BrosaHub.AuraRadius) .. " м"
-    Label.Size = UDim2.new(1, 0, 0, 20)
-    Label.Position = UDim2.new(0, 12, 0, 2)
-    Label.TextColor3 = Color3.fromRGB(244, 244, 245)
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Font = Enum.Font.GothamBold
-    Label.TextSize = 11
-    Label.BackgroundTransparency = 1
-
-    local SliderBg = Instance.new("TextButton", Frame)
-    SliderBg.Size = UDim2.new(1, -24, 0, 4)
-    SliderBg.Position = UDim2.new(0, 12, 0, 28)
-    SliderBg.BackgroundColor3 = Color3.fromRGB(39, 39, 42)
-    SliderBg.Text = ""
-
-    local SliderFill = Instance.new("Frame", SliderBg)
-    SliderFill.Size = UDim2.new(0.25, 0, 1, 0)
-    SliderFill.BackgroundColor3 = Color3.fromRGB(99, 102, 241)
-    SliderFill.BorderSizePixel = 0
-
-    local dragging = false
-    SliderBg.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = true end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local relativeX = math.clamp((input.Position.X - SliderBg.AbsolutePosition.X) / SliderBg.AbsoluteSize.X, 0, 1)
-            SliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
-            _G.BrosaHub.AuraRadius = math.floor(5 + (relativeX * 95))
-                        Label.Text = "Радиус захвата аур: " .. tostring(_G.BrosaHub.AuraRadius) .. " м"
-        end
-    end)
-end
-
--- [ГЕНЕРАТОР КНОПОК САЙДБАРА]
-local function createNavButton(name, targetId)
-    local btn = Instance.new("TextButton", NavFrame)
-    btn.Text = name
-    btn.Size = UDim2.new(1, 0, 0, 34)
-    btn.BackgroundColor3 = Color3.fromRGB(24, 24, 27)
-    btn.TextColor3 = Color3.fromRGB(113, 113, 122)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 11
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-
-    btn.MouseButton1Click:Connect(function()
-        for _, otherBtn in ipairs(NavFrame:GetChildren()) do
-            if otherBtn:IsA("TextButton") then
-                TweenService:Create(otherBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(113, 113, 122), BackgroundColor3 = Color3.fromRGB(24, 24, 27)}):Play()
-            end
-        end
-        TweenService:Create(btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(244, 244, 245), BackgroundColor3 = Color3.fromRGB(32, 32, 35)}):Play()
-        SwitchTab(targetId)
-    end)
+    btn.MouseButton1Click:Connect(callback)
     return btn
 end
 
-local startBtn = createNavButton("Атака & Физика", "Attack")
-createNavButton("Защита & Безопасность", "Defense")
-createNavButton("Визуалы & ВХ", "Visuals")
-createNavButton("Перемещение", "Movement")
-startBtn.TextColor3 = Color3.fromRGB(244, 244, 245)
-startBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 35)
+-- Вспомогательная логика экранных кнопок
+local function triggerGrabLogic()
+    if _G.BrosaHub.Flags.GrabEnabled then
+        if _G.BrosaHub.SelectedPlayer ~= "" then
+            _G.BrosaHub.SelectedPlayer = ""
+        else
+            local target = nil
+            local shortestDistance = math.huge
+            local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
--- [НАПОЛНЕНИЕ СТРАНИЦ ФУНКЦИЯМИ]
-AddRadiusSlider(AttackPage)
-AddToggle(AttackPage, "Круг Аим-Захвата", "Drawing-круг для ТП-выброса целей на ПК/Mobile", "GrabCircle")
-AddToggle(AttackPage, "Fling Aura", "Выталкивает игроков при приближении", "FlingAura")
-AddToggle(AttackPage, "Click Fling", "Швыряет игрока при клике по нему", "ClickFling")
-AddToggle(AttackPage, "Fling All", "Поочередный полет и швыряние всех", "FlingAll")
-AddToggle(AttackPage, "Kill Aura", "Ломает персонажей в радиусе действия", "KillAura")
-AddToggle(AttackPage, "Mass Void Kick", "Хватает каждого и кидает в бездну", "MassVoidKick")
-AddToggle(AttackPage, "Black Hole Sphere", "Собирает вещи и людей в шар", "BlackHoleSphere")
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= lp and player.Character and player.Character:FindFirstChild(_G.BrosaHub.GrabConfig.TargetPart) then
+                    local part = player.Character[_G.BrosaHub.GrabConfig.TargetPart]
+                    local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
 
-AddToggle(DefensePage, "Anti Grab", "Запрещает другим поднимать вас", "AntiGrab")
-AddToggle(DefensePage, "Anti Fling", "Полная защита от швыряния деталями", "AntiFling")
-AddToggle(DefensePage, "God Mode", "Режим бога (игнорирование урона)", "GodMode")
-AddToggle(DefensePage, "Anti Void", "Спасает и возвращает при падении вниз", "AntiVoid")
-AddToggle(DefensePage, "Anti Ragdoll", "Персонаж больше никогда не падает", "AntiRagdoll")
-
-AddToggle(VisualsPage, "Игроки ESP (ВХ)", "Свечение контуров врагов сквозь стены", "PlayerESP")
-AddToggle(VisualsPage, "Макс. Яркость", "Полное отключение темноты и теней", "Fullbright")
-AddToggle(VisualsPage, "Обзор 3-е Лицо", "Принудительное отдаление камеры", "ForceThirdPerson")
-AddToggle(VisualsPage, "Растяг Экрана 4:3", "Включает растянутый вид экрана", "AspectStretch")
-
-AddToggle(MovementPage, "Бесконечный Прыжок", "Позволяет прыгать прямо по воздуху", "InfJump")
-AddToggle(MovementPage, "Режим Полета", "Управление полетом через Space/Shift", "Fly")
-AddToggle(MovementPage, "Проход сквозь Стены", "Отключает коллизию объектов карты", "Noclip")
-AddToggle(MovementPage, "Клик Телепорт", "Перемещение персонажа в точку клика", "ClickTP")
-
-SwitchTab("Attack")
-
-local function shouldTarget(player)
-    if not player or player == lp then return false end
-    local selected = _G.BrosaHub.SelectedPlayer
-    if selected and selected ~= "" then
-        return player.Name == selected
-    end
-    return true
-end
-
-local function getRoot(char)
-    return char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso"))
-end
-
-local GrabEvent = ReplicatedStorage:FindFirstChild("GrabEvent") or ReplicatedStorage:FindFirstChild("Throw") or ReplicatedStorage:FindFirstChild("Action")
-
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Color = Color3.fromRGB(99, 102, 241)
-FOVCircle.Thickness = 1.5
-FOVCircle.NumSides = 64
-FOVCircle.Radius = _G.BrosaHub.Settings.CircleRadius
-FOVCircle.Filled = false
-FOVCircle.Visible = true
-
-RunService.RenderStepped:Connect(function()
-    FOVCircle.Position = UserInputService:GetMouseLocation()
-    FOVCircle.Radius = _G.BrosaHub.Settings.CircleRadius
-    FOVCircle.Visible = _G.BrosaHub.Flags.GrabCircle or false
-end)
-
-local function throwPlayerVoid(targetPlayer)
-    local myRoot = getRoot(lp.Character)
-    if not myRoot or not targetPlayer.Character then return end
-    
-    local targetPart = targetPlayer.Character:FindFirstChild(_G.BrosaHub.Settings.GrabPart) or getRoot(targetPlayer.Character)
-    if not targetPart then return end
-    
-    local savedPos = myRoot.CFrame
-
-    myRoot.CFrame = targetPart.CFrame * CFrame.new(0, 0, -3)
-    task.wait(0.04)
-    if GrabEvent then GrabEvent:FireServer("Grab", targetPart) end
-    task.wait(0.04)
-
-    myRoot.CFrame = CFrame.new(savedPos.Position.X, -350, savedPos.Position.Z)
-    task.wait(0.04)
-
-    if GrabEvent then GrabEvent:FireServer("Throw", Vector3.new(0, -_G.BrosaHub.Settings.ThrowForce, 0)) end
-    pcall(function() targetPart.Velocity = Vector3.new(0, -_G.BrosaHub.Settings.ThrowForce * 2, 0) end)
-    task.wait(0.04)
-
-        myRoot.CFrame = savedPos
-end
-
-local function getClosestInCircle()
-    local closest = nil
-    local shortestDist = math.huge
-    local mousePos = UserInputService:GetMouseLocation()
-
-    for _, p in ipairs(Players:GetPlayers()) do
-        if shouldTarget(p) and p.Character then
-            local tRoot = getRoot(p.Character)
-            if tRoot then
-                local screenPos, onScreen = camera:WorldToViewportPoint(tRoot.Position)
-                if onScreen then
-                    local magnitude = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-                    if magnitude < shortestDist and magnitude <= _G.BrosaHub.Settings.CircleRadius then
-                        local myRoot = getRoot(lp.Character)
-                        if myRoot and (tRoot.Position - myRoot.Position).Magnitude <= _G.BrosaHub.Settings.MaxGrabDistance then
-                            shortestDist = magnitude
-                            closest = p
+                    if onScreen then
+                        local screenPos = Vector2.new(pos.X, pos.Y)
+                        local distanceToCenter = (screenPos - center).Magnitude
+                        if distanceToCenter <= _G.BrosaHub.GrabConfig.Radius then
+                            local myRoot = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+                            local worldDist = myRoot and (myRoot.Position - part.Position).Magnitude or math.huge
+                            if worldDist <= _G.BrosaHub.GrabConfig.MaxDistance and distanceToCenter < shortestDistance then
+                                shortestDistance = distanceToCenter
+                                target = player
+                            end
                         end
                     end
                 end
             end
-        end
-    end
-    return closest
-end
-
-local function executeMassGrabVoid()
-    local mousePos = UserInputService:GetMouseLocation()
-    for _, p in ipairs(Players:GetPlayers()) do
-        if shouldTarget(p) and p.Character then
-            local tRoot = getRoot(p.Character)
-            if tRoot then
-                local screenPos, onScreen = camera:WorldToViewportPoint(tRoot.Position)
-                if onScreen then
-                    local dist2D = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
-                    if dist2D <= _G.BrosaHub.Settings.CircleRadius then
-                        throwPlayerVoid(p)
-                        task.wait(0.08)
-                    end
-                end
+            if target then
+                _G.BrosaHub.SelectedPlayer = target.Name
             end
         end
     end
 end
 
-local function spinFling(targetPart)
-    local hrp = getRoot(lp.Character)
-    if hrp and targetPart then
-        local oldCFrame = hrp.CFrame
-        local oldVelocity = hrp.Velocity
-        local oldRotVelocity = hrp.RotVelocity
-        
-        hrp.Velocity = Vector3.new(0, 9999, 0)
-        hrp.RotVelocity = Vector3.new(9999, 9999, 9999)
-        hrp.CFrame = targetPart.CFrame * CFrame.new(0, 0.2, 0)
-        
-        task.wait(0.03)
-        hrp.CFrame = oldCFrame
-        hrp.Velocity = oldVelocity
-        hrp.RotVelocity = oldRotVelocity
+local function triggerThrowLogic()
+    if _G.BrosaHub.Flags.GrabEnabled and _G.BrosaHub.SelectedPlayer ~= "" then
+        local player = Players:FindFirstChild(_G.BrosaHub.SelectedPlayer)
+        if player and player.Character then
+            local root = player.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local velocity = Instance.new("LinearVelocity")
+                velocity.MaxForce = math.huge
+                velocity.VectorVelocity = Camera.CFrame.LookVector * _G.BrosaHub.GrabConfig.ThrowForce
+                velocity.Parent = root
+                task.delay(0.25, function()
+                    velocity:Destroy()
+                end)
+            end
+        end
+        _G.BrosaHub.SelectedPlayer = ""
     end
 end
 
-RunService.Heartbeat:Connect(function()
-    local myRoot = getRoot(lp.Character)
-    if not myRoot then return end
-    
-    local radius = _G.BrosaHub.AuraRadius or 25
+local function triggerVoidThrowLogic()
+    if _G.BrosaHub.Flags.GrabEnabled and _G.BrosaHub.SelectedPlayer ~= "" then
+        local player = Players:FindFirstChild(_G.BrosaHub.SelectedPlayer)
+        if player and player.Character then
+            local victimRoot = player.Character:FindFirstChild("HumanoidRootPart")
+            local myRoot = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
 
-    if _G.BrosaHub.Flags.FlingAura or _G.BrosaHub.Flags.FlingAll or _G.BrosaHub.Flags.KillAura then
-        for _, p in ipairs(Players:GetPlayers()) do
-            if shouldTarget(p) and p.Character then
-                local tRoot = getRoot(p.Character)
-                if tRoot then
-                    local dist = (myRoot.Position - tRoot.Position).Magnitude
-                    if _G.BrosaHub.Flags.FlingAll or (_G.BrosaHub.Flags.FlingAura and dist <= radius) or (_G.BrosaHub.Flags.KillAura and dist <= radius) then
-                        spinFling(tRoot)
-                    end
-                end
+            if victimRoot and myRoot then
+                local originalPosition = myRoot.CFrame
+                local voidCFrame = CFrame.new(myRoot.Position.X, -450, myRoot.Position.Z)
+
+                myRoot.CFrame = voidCFrame
+                victimRoot.CFrame = voidCFrame + Vector3.new(0, 2, 0)
+
+                task.wait(0.06)
+                victimRoot.AssemblyLinearVelocity = Vector3.new(0, -600, 0)
+                _G.BrosaHub.SelectedPlayer = ""
+                myRoot.CFrame = originalPosition
+                myRoot.AssemblyLinearVelocity = Vector3.zero
             end
+        end
+    end
+end
+
+createMobileButton("ЗАХВАТ (E)", Color3.fromRGB(0, 122, 255), triggerGrabLogic)
+createMobileButton("БРОСОК (Q)", Color3.fromRGB(255, 149, 0), triggerThrowLogic)
+createMobileButton("В КАНАВУ (V)", Color3.fromRGB(255, 59, 48), triggerVoidThrowLogic)
+createMobileButton("ДИСТАНЦИЯ", Color3.fromRGB(76, 217, 100), function()
+    if _G.BrosaHub.Flags.GrabEnabled and _G.BrosaHub.SelectedPlayer ~= "" then
+        _G.BrosaHub.GrabConfig.CurrentDistance = _G.BrosaHub.GrabConfig.CurrentDistance + 15
+        if _G.BrosaHub.GrabConfig.CurrentDistance > 150 then
+            _G.BrosaHub.GrabConfig.CurrentDistance = 10
         end
     end
 end)
+
+-- ============================================================================
+-- 🌌 СИСТЕМА ПАДАЮЩИХ ЗВЕЗД
+-- ============================================================================
 
 task.spawn(function()
-    while task.wait(0.1) do
-        if _G.BrosaHub.Flags.MassVoidKick then
-            local myRoot = getRoot(lp.Character)
-            if myRoot then
-                local savedPos = myRoot.CFrame
-                
-                for _, target in ipairs(Players:GetPlayers()) do
-                    if shouldTarget(target) and target.Character then
-                        local tRoot = getRoot(target.Character)
-                        if tRoot then
-                            myRoot.Velocity = Vector3.new(0, 0, 0)
-                            myRoot.CFrame = tRoot.CFrame * CFrame.new(0, 0, 0.2)
-                            task.wait(0.04)
-                            
-                            myRoot.CFrame = CFrame.new(tRoot.Position.X, -350, tRoot.Position.Z)
-                            tRoot.CFrame = myRoot.CFrame
-                            tRoot.Velocity = Vector3.new(0, -9999, 0)
-                            task.wait(0.04)
-                            
-                                                        myRoot.CFrame = savedPos
-                            if not _G.BrosaHub.Flags.MassVoidKick then break end
-                        end
-                    end
-                end
-            end
-        end
-    end
-end)
+    while task.wait(0.15) do
+        if _G.BrosaHub.Flags.Starfield and MainFrame.Visible then
+            local star = Instance.new("Frame", StarCanvas)
+            star.Size = UDim2.new(0, math.random(2, 4), 0, math.random(2, 4))
+            star.Position = UDim2.new(math.random(0, 100) / 100, 0, 0, -10)
+            star.BackgroundColor3 = Color3.fromRGB(200, 220, 255)
+            star.BackgroundTransparency = math.random(2, 6) / 10
+            Instance.new("UICorner", star).CornerRadius = UDim.new(1, 0)
 
--- [ЧЕРНАЯ ДЫРА ДЛЯ ПРЕДМЕТОВ И ИГРОКОВ]
-task.spawn(function()
-    local angle = 0
-    while task.wait(0.01) do
-        if _G.BrosaHub.Flags.BlackHoleSphere then
-            local myRoot = getRoot(lp.Character)
-            if myRoot then
-                local sphereCenter = myRoot.Position + (myRoot.CFrame.LookVector * 18)
-                angle = angle + 0.1
-                
-                local partCount = 0
-                for _, part in ipairs(workspace:GetDescendants()) do
-                    if part:IsA("BasePart") and not part:IsDescendantOf(lp.Character) and part.Anchored == false then
-                        partCount = partCount + 1
-                        local x = math.sin(angle + partCount) * 7
-                        local y = math.cos(angle + partCount) * 7
-                        local z = math.sin(angle * 0.5 + partCount) * 7
-                        
-                        part.Velocity = Vector3.new(0, 0, 0)
-                        part.CFrame = CFrame.new(sphereCenter + Vector3.new(x, y, z))
-                    end
-                end
-                
-                local pCount = 0
-                for _, p in ipairs(Players:GetPlayers()) do
-                    if shouldTarget(p) and p.Character then
-                        local tRoot = getRoot(p.Character)
-                        if tRoot then
-                            pCount = pCount + 1
-                            local px = math.cos(angle + pCount * 2) * 5
-                            local py = math.sin(angle + pCount * 2) * 5
-                            local pz = math.cos(angle * 0.7 + pCount * 2) * 5
-                            
-                            tRoot.Velocity = Vector3.new(0, 0, 0)
-                            tRoot.CFrame = CFrame.new(sphereCenter + Vector3.new(px, py, pz))
-                        end
-                    end
-                end
-            end
-        end
-    end
-end)
+            local speed = math.random(15, 35) / 10
+            local drift = math.random(-10, 10) / 10
 
--- Срабатывание швыряния по клику курсора (Click Fling)
-mouse.Button1Down:Connect(function()
-    if _G.BrosaHub.Flags.ClickFling and mouse.Target then
-        local targetChar = mouse.Target.Parent
-        local tRoot = getRoot(targetChar) or getRoot(targetChar.Parent)
-        if tRoot then spinFling(tRoot) end
-    end
-end)
-
--- [ЗАЩИТНЫЕ СИСТЕМЫ И ИММУНИТЕТЫ]
-RunService.Stepped:Connect(function()
-    if not lp.Character then return end
-    
-    for _, part in ipairs(lp.Character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            if _G.BrosaHub.Flags.AntiGrab or _G.BrosaHub.Flags.AntiFling then
-                part.Velocity = Vector3.new(0, 0, 0)
-                part.RotVelocity = Vector3.new(0, 0, 0)
-            end
-        end
-    end
-    
-    local hum = lp.Character:FindFirstChildOfClass("Humanoid")
-    if hum and _G.BrosaHub.Flags.AntiRagdoll then
-        hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-        hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-    end
-
-    local myRoot = getRoot(lp.Character)
-    if myRoot and _G.BrosaHub.Flags.AntiVoid and myRoot.Position.Y < -60 then
-        myRoot.Velocity = Vector3.new(0, 0, 0)
-        myRoot.CFrame = CFrame.new(0, 25, 0)
-    end
-    
-    if hum and _G.BrosaHub.Flags.GodMode then
-        hum.MaxHealth = math.huge
-        hum.Health = math.huge
-    end
-end)
-
--- [СИСТЕМЫ ПЕРЕМЕЩЕНИЯ И ФЛАЙ]
-UserInputService.JumpRequest:Connect(function()
-    if _G.BrosaHub.Flags.InfJump and lp.Character then
-        local hum = lp.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
-    end
-end)
-
-local flySpeed = 65
-RunService.Heartbeat:Connect(function()
-    if not lp.Character then return end
-    local myRoot = getRoot(lp.Character)
-    local hum = lp.Character:FindFirstChildOfClass("Humanoid")
-    if not myRoot or not hum then return end
-
-    if _G.BrosaHub.Flags.Noclip or _G.BrosaHub.Flags.Fly then
-        for _, part in ipairs(lp.Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-    end
-
-    if _G.BrosaHub.Flags.Fly then
-        hum.PlatformStand = true
-        local vel = hum.MoveDirection * flySpeed
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            vel = vel + Vector3.new(0, flySpeed, 0)
-        elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-            vel = vel + Vector3.new(0, -flySpeed, 0)
-        end
-        myRoot.Velocity = vel
-    else
-        if hum.PlatformStand and not _G.BrosaHub.Flags.OrbitPlayer then hum.PlatformStand = false end
-    end
-end)
-
--- Телепортация персонажа кликом по экрану (Click TP)
-mouse.Button1Down:Connect(function()
-    if _G.BrosaHub.Flags.ClickTP and mouse.Hit then
-        local myRoot = getRoot(lp.Character)
-        if myRoot then myRoot.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0)) end
-    end
-end)
-
--- [РЕГУЛИРОВКА БИНДОВ И КОНТЕКСТНЫХ КНОПОК ПОД ДЕВАЙСЫ]
-local function setupBinds()
-    ContextActionService:UnbindAction("SmartGrabAction")
-    ContextActionService:UnbindAction("MassGrabAction")
-    
-    ContextActionService:BindAction("SmartGrabAction", function(name, state, obj)
-        if state == Enum.UserInputState.Begin then 
-            local target = getClosestInCircle()
-            if target then throwPlayerVoid(target) end
-        end
-    end, true, Enum.KeyCode.E)
-
-    ContextActionService:BindAction("MassGrabAction", function(name, state, obj)
-        if state == Enum.UserInputState.Begin then executeMassGrabVoid() end
-    end, true, Enum.KeyCode.Q)
-
-    if _G.BrosaHub.Settings.Device == "Phone" or _G.BrosaHub.Settings.Device == "Tablet" then
-        ContextActionService:SetTitle("SmartGrabAction", "🎯 Захват [E]")
-        ContextActionService:SetTitle("MassGrabAction", "💥 МАСС [Q]")
-    end
-end
-setupBinds()
-
--- [ОБНОВЛЕННЫЙ РЕНДЕР КАМЕРЫ И РАСТЯГА ЭКРАНА С ИСПРАВЛЕНИЕМ ЛИЦА]
-local lastThirdPersonState = false
-RunService.RenderStepped:Connect(function()
-    if _G.BrosaHub.Flags.AspectStretch then
-        camera.FieldOfView = 120 * (_G.BrosaHub.Settings.StretchFactor or 1.3)
-    else
-        camera.FieldOfView = 70
-    end
-
-    if _G.BrosaHub.Flags.ForceThirdPerson then
-        lp.CameraMaxZoomDistance = 120
-        lp.CameraMinZoomDistance = 20
-        if lp.CameraMode == Enum.CameraMode.LockFirstPerson then lp.CameraMode = Enum.CameraMode.Classic end
-        lastThirdPersonState = true
-    else
-        if lastThirdPersonState then
-            lastThirdPersonState = false
-            lp.CameraMinZoomDistance = 0.5
-            lp.CameraMaxZoomDistance = 0.5
-            task.spawn(function()
-                task.wait(0.1)
-                lp.CameraMaxZoomDistance = 400
-                lp.CameraMinZoomDistance = 0.5
+            local tween = TweenService:Create(star, TweenInfo.new(speed, Enum.EasingStyle.Linear), {
+                Position = UDim2.new(star.Position.X.Scale + drift, 0, 1, 10),
+                BackgroundTransparency = 1
+            })
+            tween:Play()
+            tween.Completed:Connect(function()
+                star:Destroy()
             end)
         end
     end
 end)
 
--- [РАБОЧИЙ СОВРЕМЕННЫЙ ESP HIGHLIGHT]
-local function manageESP(player)
-    if player == lp then return end
-    local function applyHighlight(char)
-        if not char then return end
-        local oldEl = char:FindFirstChild("TelzoHighlight")
-        if oldEl then oldEl:Destroy() end
-        local hl = Instance.new("Highlight")
-        hl.Name = "TelzoHighlight"
-        hl.FillColor = Color3.fromRGB(99, 102, 241)
-        hl.FillTransparency = 0.4
-        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-        hl.OutlineTransparency = 0
-        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        hl.Parent = char
-        local conn
-        conn = RunService.RenderStepped:Connect(function()
-            if not char:IsDescendantOf(workspace) or not hl.Parent then conn:Disconnect() return end
-            hl.Enabled = _G.BrosaHub.Flags.PlayerESP
-        end)
-    end
-    if player.Character then applyHighlight(player.Character) end
-    player.CharacterAdded:Connect(applyHighlight)
+-- Система плавного перемещения (Кастомный драггинг)
+local function applyDrag(uiElement)
+    local dragging, dragInput, dragStart, startPos
+    uiElement.InputBegan:Connect(function(input)
+        if uiElement.Name == "MobileControlsFrame" and _G.BrosaHub.Flags.LockMobileButtons then
+            return
+        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = uiElement.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    uiElement.InputChanged:Connect(function(input)
+        if uiElement.Name == "MobileControlsFrame" and _G.BrosaHub.Flags.LockMobileButtons then
+            return
+        end
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            if uiElement.Name == "MobileControlsFrame" and _G.BrosaHub.Flags.LockMobileButtons then
+                dragging = false
+                return
+            end
+            local delta = input.Position - dragStart
+            local endPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            TweenService:Create(uiElement, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Position = endPos
+            }):Play()
+            if uiElement.Name == "MainFrame" then
+                StarCanvas.Position = endPos
+            end
+        end
+    end)
 end
 
-for _, p in ipairs(Players:GetPlayers()) do manageESP(p) end
-Players.PlayerAdded:Connect(manageESP)
+applyDrag(MainFrame)
+applyDrag(FloatingBtn)
+applyDrag(MobileControlsFrame)
 
--- Освещение карты (Fullbright)
-task.spawn(function()
-    while task.wait(1) do
-        if _G.BrosaHub.Flags.Fullbright then
-            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-            Lighting.Brightness = 2
+-- ============================================================================
+-- 📱 РЕНДЕРИНГ ВНУТРЕННЕГО ИНТЕРФЕЙСА СТРОГО iOS STYLE
+-- ============================================================================
+
+local TopBar = Instance.new("Frame", MainFrame)
+TopBar.Size = UDim2.new(1, 0, 0, 45)
+TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+TopBar.BackgroundTransparency = 0.4
+Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 14)
+
+local Title = Instance.new("TextLabel", TopBar)
+Title.Size = UDim2.new(1, -50, 1, 0)
+Title.Position = UDim2.new(0, 20, 0, 0)
+Title.Text = "👑 TELZO REBORN v5.2 — Полная Сборка"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 16
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.BackgroundTransparency = 1
+
+local ContentContainer = Instance.new("ScrollingFrame", MainFrame)
+ContentContainer.Size = UDim2.new(1, -20, 1, -65)
+ContentContainer.Position = UDim2.new(0, 10, 0, 55)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.BorderSizePixel = 0
+ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 1550) -- Увеличен скролл под абсолютно все функции
+ContentContainer.ScrollBarThickness = 3
+ContentContainer.ZIndex = 3
+
+local UIListLayout = Instance.new("UIListLayout", ContentContainer)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 10)
+
+-- Генератор iOS кнопок
+local function createToggle(name, flagName, callback)
+    local frame = Instance.new("Frame", ContentContainer)
+    frame.Size = UDim2.new(1, -10, 0, 42)
+    frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    frame.BackgroundTransparency = 0.95
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+    local fStroke = Instance.new("UIStroke", frame)
+    fStroke.Color = Color3.fromRGB(255, 255, 255)
+    fStroke.Transparency = 0.9
+
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.Position = UDim2.new(0, 15, 0, 0)
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(230, 230, 235)
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 15
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.BackgroundTransparency = 1
+
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(0, 50, 0, 24)
+    btn.Position = UDim2.new(1, -65, 0.5, -12)
+    btn.BackgroundColor3 = _G.BrosaHub.Flags[flagName] and Color3.fromRGB(0, 122, 255) or Color3.fromRGB(40, 40, 45)
+    btn.Text = ""
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+
+    local circle = Instance.new("Frame", btn)
+    circle.Size = UDim2.new(0, 20, 0, 20)
+    circle.Position = _G.BrosaHub.Flags[flagName] and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
+    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+
+    btn.MouseButton1Click:Connect(function()
+        _G.BrosaHub.Flags[flagName] = not _G.BrosaHub.Flags[flagName]
+        local active = _G.BrosaHub.Flags[flagName]
+        TweenService:Create(btn, TweenInfo.new(0.2), {
+            BackgroundColor3 = active and Color3.fromRGB(0, 122, 255) or Color3.fromRGB(40, 40, 45)
+        }):Play()
+        TweenService:Create(circle, TweenInfo.new(0.2), {
+            Position = active and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
+        }):Play()
+        if callback then
+            callback(active)
+        end
+    end)
+end
+
+local function createSlider(name, min, max, defaultConfig, subKey, callback)
+    local frame = Instance.new("Frame", ContentContainer)
+    frame.Size = UDim2.new(1, -10, 0, 55)
+    frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    frame.BackgroundTransparency = 0.95
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(0.6, 0, 0, 20)
+    label.Position = UDim2.new(0, 15, 0, 4)
+    label.Text = name .. ": " .. tostring(_G.BrosaHub[defaultConfig][subKey])
+    label.TextColor3 = Color3.fromRGB(230, 230, 235)
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 14
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.BackgroundTransparency = 1
+
+    local slideBar = Instance.new("TextButton", frame)
+    slideBar.Size = UDim2.new(1, -30, 0, 4)
+    slideBar.Position = UDim2.new(0, 15, 0, 38)
+    slideBar.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+    slideBar.Text = ""
+    Instance.new("UICorner", slideBar).CornerRadius = UDim.new(1, 0)
+
+    local fill = Instance.new("Frame", slideBar)
+    fill.Size = UDim2.new((_G.BrosaHub[defaultConfig][subKey] - min) / (max - min), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(0, 122, 255)
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+
+    local sliderBtn = Instance.new("Frame", slideBar)
+    sliderBtn.Size = UDim2.new(0, 14, 0, 14)
+    sliderBtn.Position = UDim2.new((_G.BrosaHub[defaultConfig][subKey] - min) / (max - min), -7, 0.5, -7)
+    sliderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Instance.new("UICorner", sliderBtn).CornerRadius = UDim.new(1, 0)
+
+    local function updateSlider(input)
+        local percentage = math.clamp((input.Position.X - slideBar.AbsolutePosition.X) / slideBar.AbsoluteSize.X, 0, 1)
+        local value = math.floor(min + (max - min) * percentage)
+        _G.BrosaHub[defaultConfig][subKey] = value
+        label.Text = name .. ": " .. tostring(value)
+        fill.Size = UDim2.new(percentage, 0, 1, 0)
+        sliderBtn.Position = UDim2.new(percentage, -7, 0.5, -7)
+        if callback then
+            callback(value)
+        end
+    end
+
+    local sliding = false
+    slideBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            sliding = true
+            updateSlider(input)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateSlider(input)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            sliding = false
+        end
+    end)
+end
+
+local function createDropdown(name, options, defaultConfig, subKey, callback)
+    local frame = Instance.new("Frame", ContentContainer)
+    frame.Size = UDim2.new(1, -10, 0, 42)
+    frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    frame.BackgroundTransparency = 0.95
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(0.5, 0, 1, 0)
+    label.Position = UDim2.new(0, 15, 0, 0)
+    label.Text = name .. ": " .. tostring(_G.BrosaHub[defaultConfig][subKey])
+    label.TextColor3 = Color3.fromRGB(230, 230, 235)
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 15
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.BackgroundTransparency = 1
+
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(0, 110, 0, 26)
+    btn.Position = UDim2.new(1, -125, 0.5, -13)
+    btn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    btn.Text = "Выбрать ➡️"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 13
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+    local index = 1
+    btn.MouseButton1Click:Connect(function()
+        index = index + 1
+        if index > #options then
+            index = 1
+        end
+        local chosen = options[index]
+        _G.BrosaHub[defaultConfig][subKey] = chosen
+        label.Text = name .. ": " .. tostring(chosen)
+        if callback then
+            callback(chosen)
+        end
+    end)
+end
+
+-- ВЫВОД ВСЕХ ВАШИХ РОДНЫХ И ОРИГИНАЛЬНЫХ ФУНКЦИЙ В МЕНЮ
+createToggle("Fling Aura", "FlingAura")
+createToggle("Click Fling", "ClickFling")
+createToggle("Fling All", "FlingAll")
+createToggle("Kill Aura", "KillAura")
+createToggle("Mass Void Kick", "MassVoidKick")
+createToggle("Black Hole Sphere", "BlackHoleSphere")
+createToggle("Anti Grab", "AntiGrab")
+createToggle("Anti Fling", "AntiFling")
+createToggle("God Mode", "GodMode")
+createToggle("Anti Void", "AntiVoid")
+createToggle("Anti Ragdoll", "AntiRagdoll")
+createToggle("Fullbright", "Fullbright")
+createToggle("Fly", "Fly")
+createToggle("Noclip", "Noclip")
+createToggle("Click TP (Клик мыши)", "ClickTP")
+createToggle("Infinite Jump (Бесконечный прыжок)", "InfJump")
+
+-- ВЫВОД НОВЫХ ФУНКЦИЙ
+createToggle("Захват Кинетиком (Кинетический Аим)", "GrabEnabled", function(val)
+    FovCircle.Visible = val
+    MobileControlsFrame.Visible = val
+    if not val then
+        SnapLine.Visible = false
+        _G.BrosaHub.SelectedPlayer = ""
+    end
+end)
+
+createToggle("Заблокировать позицию кнопок", "LockMobileButtons")
+
+createSlider("Радиус круга захвата (FOV)", 30, 400, "GrabConfig", "Radius", function(val)
+    FovCircle.Radius = val
+end)
+
+createSlider("Макс. Дальность Захвата (Studs)", 50, 2000, "GrabConfig", "MaxDistance")
+createSlider("Сила Дальнего Броска", 100, 1500, "GrabConfig", "ThrowForce")
+
+createDropdown("За какую часть брать", {
+    "HumanoidRootPart",
+    "Head",
+    "Torso",
+    "Left Leg",
+    "Right Leg"
+}, "GrabConfig", "TargetPart")
+
+createDropdown("Выбор устройства", {
+    "Android",
+    "iOS",
+    "PC Emulation"
+}, "GrabConfig", "DeviceMode")
+
+createToggle("Растяг Экрана (Stretch Resolution)", "StretchScreen", function(val)
+    if not val then
+        Camera.FieldOfView = 70
+    end
+end)
+
+createToggle("Принудительное 3-е Лицо (Force 3rd Person)", "ForceThirdPerson", function(val)
+    if val then
+        OriginalCameraSettings.CameraMode = lp.CameraMode
+        OriginalCameraSettings.CameraMinZoomDistance = lp.CameraMinZoomDistance
+        OriginalCameraSettings.CameraMaxZoomDistance = lp.CameraMaxZoomDistance
+        lp.CameraMode = Enum.CameraMode.Classic
+        lp.CameraMinZoomDistance = 15
+        lp.CameraMaxZoomDistance = 100
+    else
+        lp.CameraMode = OriginalCameraSettings.CameraMode
+        lp.CameraMinZoomDistance = OriginalCameraSettings.CameraMinZoomDistance
+        lp.CameraMaxZoomDistance = OriginalCameraSettings.CameraMaxZoomDistance
+    end
+end)
+
+createToggle("ВХ: Отображение 3D Боксов", "EspBoxes")
+createToggle("ВХ: Текстовые Ники игроков", "EspNames")
+createToggle("ВХ: Трассеры линий до целей", "EspTracers")
+createToggle("Анимация звездного неба", "Starfield")
+
+-- Переключатель видимости меню через плавающую корону
+local menuOpen = true
+FloatingBtn.MouseButton1Click:Connect(function()
+    menuOpen = not menuOpen
+    MainFrame.Visible = menuOpen
+    StarCanvas.Visible = menuOpen
+    FovCircle.Visible = (_G.BrosaHub.Flags.GrabEnabled and menuOpen)
+end)
+
+-- ============================================================================
+-- 🔮 МЕХАНИКА ОБРАБОТКИ ВВОДА КЛАВИАТУРЫ И СЛЕЖЕНИЯ ЗА ЦЕЛЯМИ
+-- ============================================================================
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then
+        return
+    end
+    if _G.BrosaHub.Flags.GrabEnabled then
+        if input.KeyCode == _G.BrosaHub.GrabConfig.GrabKey then
+            triggerGrabLogic()
+        elseif input.KeyCode == _G.BrosaHub.GrabConfig.ThrowKey then
+            triggerThrowLogic()
+        elseif input.KeyCode == _G.BrosaHub.GrabConfig.VoidThrowKey then
+            triggerVoidThrowLogic()
         end
     end
 end)
 
-print("[TELZO v5.2] Скрипт полностью собран. Кнопка 'X' выгружает чит.")
+RunService.RenderStepped:Connect(function()
+    if _G.BrosaHub.Flags.GrabEnabled and _G.BrosaHub.SelectedPlayer ~= "" then
+        if UserInputService:IsKeyDown(_G.BrosaHub.GrabConfig.PushKey) then
+            _G.BrosaHub.GrabConfig.CurrentDistance = math.clamp(_G.BrosaHub.GrabConfig.CurrentDistance + 2, 5, 300)
+        elseif UserInputService:IsKeyDown(_G.BrosaHub.GrabConfig.PullKey) then
+            _G.BrosaHub.GrabConfig.CurrentDistance = math.clamp(_G.BrosaHub.GrabConfig.CurrentDistance - 2, 5, 300)
+        end
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    FovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    FovCircle.Radius = _G.BrosaHub.GrabConfig.Radius
+
+    if _G.BrosaHub.Flags.GrabEnabled and _G.BrosaHub.SelectedPlayer ~= "" then
+        local player = Players:FindFirstChild(_G.BrosaHub.SelectedPlayer)
+        if player and player.Character then
+            local victimRoot = player.Character:FindFirstChild(_G.BrosaHub.GrabConfig.TargetPart)
+            local myRoot = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+            if victimRoot and myRoot then
+                local targetPosition = Camera.CFrame.Position + (Camera.CFrame.LookVector * _G.BrosaHub.GrabConfig.CurrentDistance)
+                victimRoot.CFrame = CFrame.new(targetPosition, Camera.CFrame.Position + Camera.CFrame.LookVector * 100)
+                victimRoot.AssemblyLinearVelocity = Vector3.zero
+
+                local screenPos, onScreen = Camera:WorldToViewportPoint(victimRoot.Position)
+                if onScreen then
+                    SnapLine.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+                    SnapLine.To = Vector2.new(screenPos.X, screenPos.Y)
+                    SnapLine.Visible = true
+                else
+                    SnapLine.Visible = false
+                end
+            else
+                SnapLine.Visible = false
+            end
+        else
+            SnapLine.Visible = false
+        end
+    else
+        SnapLine.Visible = false
+    end
+
+    if _G.BrosaHub.Flags.StretchScreen then
+        Camera.FieldOfView = 70 * _G.BrosaHub.StretchValue
+    end
+
+    if _G.BrosaHub.Flags.ForceThirdPerson then
+        lp.CameraMode = Enum.CameraMode.Classic
+    end
+end)
+
+-- ============================================================================
+-- 👁️ СИСТЕМА PREMIUM ESP (3D БОКСЫ, НИКИ, ТРАССЕРЫ)
+-- ============================================================================
+
+local EspCache = {}
+
+local function createEspElements(player)
+    if EspCache[player] then
+        return
+    end
+
+    local box = Drawing.new("Square")
+    box.Thickness = 1.5
+    box.Color = Color3.fromRGB(255, 255, 255)
+    box.Filled = false
+    box.Transparency = 0.8
+    box.Visible = false
+
+    local nameTag = Drawing.new("Text")
+    nameTag.Size = 14
+    nameTag.Center = true
+    nameTag.Outline = true
+    nameTag.Color = Color3.fromRGB(255, 255, 255)
+    nameTag.Visible = false
+
+    local tracer = Drawing.new("Line")
+    tracer.Thickness = 1
+    tracer.Color = Color3.fromRGB(255, 255, 0)
+    tracer.Transparency = 0.5
+    tracer.Visible = false
+
+    EspCache[player] = {
+        Box = box,
+        Name = nameTag,
+        Tracer = tracer
+    }
+end
+
+local function cleanEspElements(player)
+    if EspCache[player] then
+        EspCache[player].Box:Remove()
+        EspCache[player].Name:Remove()
+        EspCache[player].Tracer:Remove()
+        EspCache[player] = nil
+    end
+end
+
+Players.PlayerAdded:Connect(createEspElements)
+Players.PlayerRemoving:Connect(cleanEspElements)
+
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= lp then
+        createEspElements(p)
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    for player, visual in pairs(EspCache) do
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChildOfClass("Humanoid") and player.Character:FindFirstChildOfClass("Humanoid").Health > 0 then
+            local root = player.Character.HumanoidRootPart
+            local rootPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+
+            if onScreen then
+                local head = player.Character:FindFirstChild("Head")
+                local headPos = head and Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0)) or rootPos
+                local legPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0))
+                local boxHeight = math.abs(headPos.Y - legPos.Y)
+                local boxWidth = boxHeight * 0.6
+
+                if _G.BrosaHub.Flags.EspBoxes then
+                    visual.Box.Size = Vector2.new(boxWidth, boxHeight)
+                    visual.Box.Position = Vector2.new(rootPos.X - boxWidth / 2, rootPos.Y - boxHeight / 2)
+                    visual.Box.Color = (_G.BrosaHub.SelectedPlayer == player.Name) and Color3.fromRGB(0, 255, 150) or Color3.fromRGB(255, 60, 60)
+                    visual.Box.Visible = true
+                else
+                    visual.Box.Visible = false
+                end
+
+                if _G.BrosaHub.Flags.EspNames then
+                    visual.Name.Text = player.Name .. " [" .. math.floor(player.Character:FindFirstChildOfClass("Humanoid").Health) .. " HP]"
+                    visual.Name.Position = Vector2.new(rootPos.X, rootPos.Y - (boxHeight / 2) - 18)
+                    visual.Name.Visible = true
+                else
+                    visual.Name.Visible = false
+                end
+
+                if _G.BrosaHub.Flags.EspTracers then
+                    visual.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                    visual.Tracer.To = Vector2.new(rootPos.X, rootPos.Y)
+                    visual.Tracer.Visible = true
+                else
+                    visual.Tracer.Visible = false
+                end
+            else
+                visual.Box.Visible = false
+                visual.Name.Visible = false
+                visual.Tracer.Visible = false
+            end
+        else
+            visual.Box.Visible = false
+            visual.Name.Visible = false
+            visual.Tracer.Visible = false
+        end
+    end
+end)
+
+-- ============================================================================
+-- 💃 СИСТЕМА ВОСПРОИЗВЕДЕНИЯ ВСЕХ БАЗОВЫХ, КЛАССИЧЕСКИХ И ПРЕМИУМ АНИМАЦИЙ
+-- ============================================================================
+
+local AnimationSection = Instance.new("Frame", ContentContainer)
+AnimationSection.Size = UDim2.new(1, -10, 0, 250)
+AnimationSection.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+AnimationSection.BackgroundTransparency = 0.95
+Instance.new("UICorner", AnimationSection).CornerRadius = UDim.new(0, 10)
+
+local AnimTitle = Instance.new("TextLabel", AnimationSection)
+AnimTitle.Size = UDim2.new(1, -20, 0, 25)
+AnimTitle.Position = UDim2.new(0, 12, 0, 5)
+AnimTitle.Text = "💃 Полный каталог анимаций клиента"
+AnimTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+AnimTitle.Font = Enum.Font.SourceSansBold
+AnimTitle.TextSize = 14
+AnimTitle.TextXAlignment = Enum.TextXAlignment.Left
+AnimTitle.BackgroundTransparency = 1
+
+local animGrid = Instance.new("Frame", AnimationSection)
+animGrid.Size = UDim2.new(1, -20, 1, -35)
+animGrid.Position = UDim2.new(0, 10, 0, 32)
+animGrid.BackgroundTransparency = 1
+
+local UIGridLayout = Instance.new("UIGridLayout", animGrid)
+UIGridLayout.CellSize = UDim2.new(0, 100, 0, 30)
+UIGridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
+
+local allRobloxAnimations = {
+    {Name = "Танец 1", Id = "rbxassetid://33333313"},
+    {Name = "Танец 2", Id = "rbxassetid://33333364"},
+    {Name = "Танец 3", Id = "rbxassetid://33333420"},
+    {Name = "Поклон", Id = "rbxassetid://128484984"},
+    {Name = "Сальто", Id = "rbxassetid://121572214"},
+    {Name = "Зомби", Id = "rbxassetid://616115384"},
+    {Name = "Ниндзя", Id = "rbxassetid://616111533"},
+    {Name = "Левитация", Id = "rbxassetid://616006778"},
+    {Name = "Волна", Id = "rbxassetid://128483321"},
+    {Name = "Повелевать", Id = "rbxassetid://128484411"},
+    {Name = "Смех", Id = "rbxassetid://128486187"},
+    {Name = "Победа", Id = "rbxassetid://128485547"}
+}
+
+for _, animData in ipairs(allRobloxAnimations) do
+    local abtn = Instance.new("TextButton", animGrid)
+    abtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    abtn.BackgroundTransparency = 0.9
+    abtn.Text = animData.Name
+    abtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    abtn.Font = Enum.Font.SourceSans
+    abtn.TextSize = 13
+    Instance.new("UICorner", abtn).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", abtn).Transparency = 0.85
+
+    abtn.MouseButton1Click:Connect(function()
+        local humanoid = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            local anim = Instance.new("Animation")
+            anim.AnimationId = animData.Id
+            local track = humanoid:LoadAnimation(anim)
+            track:Play()
+        end
+    end)
+end
+
+-- Подвал разработчиков (Credits)
+local CreditsFrame = Instance.new("Frame", ContentContainer)
+CreditsFrame.Size = UDim2.new(1, -10, 0, 65)
+CreditsFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+CreditsFrame.BackgroundTransparency = 0.97
+Instance.new("UICorner", CreditsFrame).CornerRadius = UDim.new(0, 10)
+
+local CreditsText = Instance.new("TextLabel", CreditsFrame)
+CreditsText.Size = UDim2.new(1, -20, 1, 0)
+CreditsText.Position = UDim2.new(0, 10, 0, 0)
+CreditsText.Text = "Разработано командой Telzo Core Team & AI Syndicate. Все права защищены (2026). Скрипт полностью инициализирован и готов к работе в Delta / Luau API."
+CreditsText.TextColor3 = Color3.fromRGB(140, 140, 145)
+CreditsText.Font = Enum.Font.SourceSansItalic
+CreditsText.TextSize = 12
+CreditsText.TextWrapped = true
+CreditsText.TextXAlignment = Enum.TextXAlignment.Center
+CreditsText.BackgroundTransparency = 1
+
+MainFrame.Visible = true
+StarCanvas.Visible = true
+FovCircle.Visible = _G.BrosaHub.Flags.GrabEnabled
+SnapLine.Visible = false
+
+print("[TELZO REBORN v5.2]: Абсолютная сборка успешно скомпилирована!")
