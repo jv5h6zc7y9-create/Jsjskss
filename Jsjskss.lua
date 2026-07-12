@@ -1,5 +1,5 @@
 -- ============================================================================
--- 👑 BROSA SYSTEM v5.2 — PRIVATE ELITE MONOLITH SCRIPT HUB [ПОЛНАЯ СБОРКА]
+-- 👑 BROSA SYSTEM v5.2 — PRIVATE ELITE MONOLITH SCRIPT HUB [ЧАСТЬ 1 ИЗ 4]
 -- 🛠️ Среда выполнения: Delta Executor / Спецификация движка: Luau (Roblox API)
 -- 🎯 Оптимизировано под режим: Fling Things and People (FTAP)
 -- 🎨 Дизайн-код: Полная поддержка интерфейса v4.5 с кастомными прицелами
@@ -125,7 +125,8 @@ local function DestroyBrosaSystemForever()
 	
 	local hum = getHum()
 	if hum then
-		hum.WalkSpeed = 16 hum.JumpPower = 50
+		hum.WalkSpeed = 16
+		hum.JumpPower = 50
 		hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
 		hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
 		hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStand, true)
@@ -236,17 +237,34 @@ end
 
 WindowContainer.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		Dragging = true DragStart = input.Position StartPosition = WindowContainer.Position
-		input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then Dragging = false end end)
+		Dragging = true
+		DragStart = input.Position
+		StartPosition = WindowContainer.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				Dragging = false
+			end
+		end)
 	end
 end)
-WindowContainer.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then DragInput = input end end)
-UserInputService.InputChanged:Connect(function(input) if input == DragInput and Dragging then UpdateDrag(input) end end)
+WindowContainer.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		DragInput = input
+	end
+end)
+UserInputService.InputChanged:Connect(function(input)
+	if input == DragInput and Dragging then
+		UpdateDrag(input)
+	end
+end)
 
 task.spawn(function()
-	TweenService:Create(LoaderBarFill, TweenInfo.new(1.1, Enum.EasingStyle.Cubic), {Size = UDim2.new(0.5, 0, 1, 0)}):Play() task.wait(1.3)
-	TweenService:Create(LoaderBarFill, TweenInfo.new(0.8, Enum.EasingStyle.Cubic), {Size = UDim2.new(0.85, 0, 1, 0)}):Play() task.wait(0.9)
-	TweenService:Create(LoaderBarFill, TweenInfo.new(0.5, Enum.EasingStyle.Cubic), {Size = UDim2.new(1, 0, 1, 0)}):Play() task.wait(0.7)
+	TweenService:Create(LoaderBarFill, TweenInfo.new(1.1, Enum.EasingStyle.Cubic), {Size = UDim2.new(0.5, 0, 1, 0)}):Play()
+	task.wait(1.3)
+	TweenService:Create(LoaderBarFill, TweenInfo.new(0.8, Enum.EasingStyle.Cubic), {Size = UDim2.new(0.85, 0, 1, 0)}):Play()
+	task.wait(0.9)
+	TweenService:Create(LoaderBarFill, TweenInfo.new(0.5, Enum.EasingStyle.Cubic), {Size = UDim2.new(1, 0, 1, 0)}):Play()
+	task.wait(0.7)
 
 	local screenHideInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad)
 	TweenService:Create(LoadingScreen, screenHideInfo, {BackgroundTransparency = 1, Size = UDim2.new(0, _G.BrosaHub.Options.StretchX * 1.05, 0, _G.BrosaHub.Options.StretchY * 1.05), Position = UDim2.new(0, -21, 0, -14)}):Play()
@@ -255,26 +273,57 @@ task.spawn(function()
 	TweenService:Create(LoaderBarFill, screenHideInfo, {BackgroundTransparency = 1}):Play()
 	TweenService:Create(LoaderBarGlow, screenHideInfo, {ImageTransparency = 1}):Play()
 	TweenService:Create(LoadingStroke, screenHideInfo, {Transparency = 1}):Play()
-	task.wait(0.4) LoadingScreen:Destroy()
+	task.wait(0.4)
+	LoadingScreen:Destroy()
 
-	MainPanel.Visible = true MainPanel.Size = UDim2.new(0, _G.BrosaHub.Options.StretchX - 17, 0, _G.BrosaHub.Options.StretchY - 12) MainPanel.Position = UDim2.new(0, 8, 0, 6) MainPanel.BackgroundTransparency = 0 MainPanel.Transparency = 0 WindowContainer.BackgroundTransparency = 1
+	MainPanel.Visible = true
+	MainPanel.Size = UDim2.new(0, _G.BrosaHub.Options.StretchX - 17, 0, _G.BrosaHub.Options.StretchY - 12)
+	MainPanel.Position = UDim2.new(0, 8, 0, 6)
+	MainPanel.BackgroundTransparency = 0
+	MainPanel.Transparency = 0
+	WindowContainer.BackgroundTransparency = 1
 	TweenService:Create(MainPanel, TweenInfo.new(0.5, Enum.EasingStyle.Cubic), {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 0}):Play()
 end)
 
 local Sidebar = Instance.new("Frame", MainPanel)
-Sidebar.Name = "Sidebar" Sidebar.Size = UDim2.new(0, 230, 1, 0) Sidebar.BackgroundColor3 = Colors.BgSidebar Sidebar.BorderSizePixel = 0
+Sidebar.Name = "Sidebar"
+Sidebar.Size = UDim2.new(0, 230, 1, 0)
+Sidebar.BackgroundColor3 = Colors.BgSidebar
+Sidebar.BorderSizePixel = 0
+
 local SidebarStroke = Instance.new("Frame", Sidebar)
-SidebarStroke.Size = UDim2.new(0, 1, 1, 0) SidebarStroke.Position = UDim2.new(1, -1, 0, 0) SidebarStroke.BackgroundColor3 = Colors.Border
+SidebarStroke.Size = UDim2.new(0, 1, 1, 0)
+SidebarStroke.Position = UDim2.new(1, -1, 0, 0)
+SidebarStroke.BackgroundColor3 = Colors.Border
+
 local SidebarTop = Instance.new("Frame", Sidebar)
-SidebarTop.Size = UDim2.new(1, 0, 1, -115) SidebarTop.BackgroundTransparency = 1
+SidebarTop.Size = UDim2.new(1, 0, 1, -115)
+SidebarTop.BackgroundTransparency = 1
+
 local Logo = Instance.new("TextLabel", SidebarTop)
-Logo.Size = UDim2.new(1, -24, 0, 40) Logo.Position = UDim2.new(0, 24, 0, 24) Logo.BackgroundTransparency = 1 Logo.Text = "BROSA SYSTEM" Logo.TextColor3 = Colors.TextMain Logo.Font = Enum.Font.SourceSansBold Logo.TextSize = 13 Logo.TextXAlignment = Enum.TextXAlignment.Left
+Logo.Size = UDim2.new(1, -24, 0, 40)
+Logo.Position = UDim2.new(0, 24, 0, 24)
+Logo.BackgroundTransparency = 1
+Logo.Text = "BROSA SYSTEM"
+Logo.TextColor3 = Colors.TextMain
+Logo.Font = Enum.Font.SourceSansBold
+Logo.TextSize = 13
+Logo.TextXAlignment = Enum.TextXAlignment.Left
+
 local NavList = Instance.new("Frame", SidebarTop)
-NavList.Size = UDim2.new(1, -24, 1, -80) NavList.Position = UDim2.new(0, 12, 0, 80) NavList.BackgroundTransparency = 1
+NavList.Size = UDim2.new(1, -24, 1, -80)
+NavList.Position = UDim2.new(0, 12, 0, 80)
+NavList.BackgroundTransparency = 1
+
 local NavLayout = Instance.new("UIListLayout", NavList)
-NavLayout.SortOrder = Enum.SortOrder.LayoutOrder NavLayout.Padding = UDim.new(0, 4)
+NavLayout.SortOrder = Enum.SortOrder.LayoutOrder
+NavLayout.Padding = UDim.new(0, 4)
+
 local PagesContainer = Instance.new("Frame", MainPanel)
-PagesContainer.Size = UDim2.new(1, -230, 1, 0) PagesContainer.Position = UDim2.new(0, 230, 0, 0) PagesContainer.BackgroundColor3 = Colors.BgPanel
+PagesContainer.Size = UDim2.new(1, -230, 1, 0)
+PagesContainer.Position = UDim2.new(0, 230, 0, 0)
+PagesContainer.BackgroundColor3 = Colors.BgPanel
+
 local NavButtons = {}
 local function switchPage(pageName, clickedButton)
 	_G.BrosaHub.Cache.ActivePage = pageName
@@ -292,23 +341,55 @@ local function switchPage(pageName, clickedButton)
 				TweenService:Create(pageFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Position = UDim2.new(0, 0, 0, 0)}):Play()
 			else
 				TweenService:Create(pageFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Position = UDim2.new(0, 15, 0, 0)}):Play()
-				task.delay(0.2, function() if _G.BrosaHub.Cache.ActivePage ~= pageFrame.Name:sub(6) then pageFrame.Visible = false end end)
+				task.delay(0.2, function()
+					if _G.BrosaHub.Cache.ActivePage ~= pageFrame.Name:sub(6) then
+						pageFrame.Visible = false
+					end
+				end)
 			end
 		end
 	end
 end
+
 local function createNavItem(displayName, targetPage, layoutOrder)
 	local NavItem = Instance.new("TextButton", NavList)
-	NavItem.Size = UDim2.new(1, 0, 0, 38) NavItem.BackgroundColor3 = Color3.fromRGB(0, 0, 0) NavItem.BorderSizePixel = 0 NavItem.Text = " " .. displayName NavItem.TextColor3 = (layoutOrder == 1) and Colors.TextMain or Colors.TextMuted NavItem.Font = Enum.Font.SourceSansProSemibold NavItem.TextSize = 13 NavItem.TextXAlignment = Enum.TextXAlignment.Left NavItem.LayoutOrder = layoutOrder
+	NavItem.Size = UDim2.new(1, 0, 0, 38)
+	NavItem.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	NavItem.BorderSizePixel = 0
+	NavItem.Text = " " .. displayName
+	NavItem.TextColor3 = (layoutOrder == 1) and Colors.TextMain or Colors.TextMuted
+	NavItem.Font = Enum.Font.SourceSansProSemibold
+	NavItem.TextSize = 13
+	NavItem.TextXAlignment = Enum.TextXAlignment.Left
+	NavItem.LayoutOrder = layoutOrder
 	Instance.new("UICorner", NavItem).CornerRadius = UDim.new(0, 6)
+	
 	local ActiveIndicator = Instance.new("Frame", NavItem)
-	ActiveIndicator.Name = "ActiveIndicator" ActiveIndicator.Size = UDim2.new(0, 2, 0, 19) ActiveIndicator.Position = UDim2.new(0, 0, 0.5, -9) ActiveIndicator.BackgroundColor3 = Colors.Accent ActiveIndicator.BackgroundTransparency = (layoutOrder == 1) and 0 or 1
-	if layoutOrder == 1 then NavItem.BackgroundColor3 = Color3.fromRGB(8, 8, 26) end
+	ActiveIndicator.Name = "ActiveIndicator"
+	ActiveIndicator.Size = UDim2.new(0, 2, 0, 19)
+	ActiveIndicator.Position = UDim2.new(0, 0, 0.5, -9)
+	ActiveIndicator.BackgroundColor3 = Colors.Accent
+	ActiveIndicator.BackgroundTransparency = (layoutOrder == 1) and 0 or 1
+	if layoutOrder == 1 then
+		NavItem.BackgroundColor3 = Color3.fromRGB(8, 8, 26)
+	end
 	NavButtons[targetPage] = NavItem
-	NavItem.MouseEnter:Connect(function() if _G.BrosaHub.Cache.ActivePage ~= targetPage then TweenService:Create(NavItem, TweenInfo.new(0.2), {TextColor3 = Colors.TextMain, BackgroundColor3 = Color3.fromRGB(6, 6, 6)}):Play() end end)
-	NavItem.MouseLeave:Connect(function() if _G.BrosaHub.Cache.ActivePage ~= targetPage then TweenService:Create(NavItem, TweenInfo.new(0.2), {TextColor3 = Colors.TextMuted, BackgroundColor3 = Color3.fromRGB(0, 0, 0)}):Play() end end)
-	NavItem.MouseButton1Click:Connect(function() switchPage(targetPage, NavItem) end)
+	
+	NavItem.MouseEnter:Connect(function()
+		if _G.BrosaHub.Cache.ActivePage ~= targetPage then
+			TweenService:Create(NavItem, TweenInfo.new(0.2), {TextColor3 = Colors.TextMain, BackgroundColor3 = Color3.fromRGB(6, 6, 6)}):Play()
+		end
+	end)
+	NavItem.MouseLeave:Connect(function()
+		if _G.BrosaHub.Cache.ActivePage ~= targetPage then
+			TweenService:Create(NavItem, TweenInfo.new(0.2), {TextColor3 = Colors.TextMuted, BackgroundColor3 = Color3.fromRGB(0, 0, 0)}):Play()
+		end
+	end)
+	NavItem.MouseButton1Click:Connect(function()
+		switchPage(targetPage, NavItem)
+	end)
 end
+
 createNavItem("Combat & Fling", "attack", 1)
 createNavItem("Defense & Safe", "defense", 2)
 createNavItem("Movement & TP", "movement", 3)
@@ -326,26 +407,62 @@ ExitHubBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ExitHubBtn.Font = Enum.Font.SourceSansProBold
 ExitHubBtn.TextSize = 12
 Instance.new("UICorner", ExitHubBtn).CornerRadius = UDim.new(0, 6)
-ExitHubBtn.MouseButton1Click:Connect(function() DestroyBrosaSystemForever() end)
+ExitHubBtn.MouseButton1Click:Connect(function()
+	DestroyBrosaSystemForever()
+end)
 
 local ProfileBox = Instance.new("Frame", Sidebar)
-ProfileBox.Size = UDim2.new(1, -24, 0, 56) ProfileBox.Position = UDim2.new(0, 12, 1, -68) ProfileBox.BackgroundColor3 = Colors.BgCard
+ProfileBox.Size = UDim2.new(1, -24, 0, 56)
+ProfileBox.Position = UDim2.new(0, 12, 1, -68)
+ProfileBox.BackgroundColor3 = Colors.BgCard
 Instance.new("UICorner", ProfileBox).CornerRadius = UDim.new(0, 8)
+
 local ProfileStroke = Instance.new("UIStroke", ProfileBox)
 ProfileStroke.Color = Colors.Border
+
 local AvatarMini = Instance.new("Frame", ProfileBox)
-AvatarMini.Size = UDim2.new(0, 32, 0, 32) AvatarMini.Position = UDim2.new(0, 12, 0.5, -16) Instance.new("UICorner", AvatarMini).CornerRadius = UDim.new(1, 0)
+AvatarMini.Size = UDim2.new(0, 32, 0, 32)
+AvatarMini.Position = UDim2.new(0, 12, 0.5, -16)
+Instance.new("UICorner", AvatarMini).CornerRadius = UDim.new(1, 0)
+
 local AvatarGradient = Instance.new("UIGradient", AvatarMini)
 AvatarGradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Colors.Accent), ColorSequenceKeypoint.new(1, Color3.fromRGB(165, 180, 252))})
 AvatarGradient.Rotation = 135
+
 local AvatarText = Instance.new("TextLabel", AvatarMini)
-AvatarText.Size = UDim2.new(1, 0, 1, 0) AvatarText.BackgroundTransparency = 1 AvatarText.Text = "BS" AvatarText.TextColor3 = Color3.fromRGB(255, 255, 255) AvatarText.Font = Enum.Font.SourceSansBold AvatarText.TextSize = 11
+AvatarText.Size = UDim2.new(1, 0, 1, 0)
+AvatarText.BackgroundTransparency = 1
+AvatarText.Text = "BS"
+AvatarText.TextColor3 = Color3.fromRGB(255, 255, 255)
+AvatarText.Font = Enum.Font.SourceSansBold
+AvatarText.TextSize = 11
+
 local MetaMini = Instance.new("Frame", ProfileBox)
-MetaMini.Size = UDim2.new(1, -62, 1, 0) MetaMini.Position = UDim2.new(0, 52, 0, 0) MetaMini.BackgroundTransparency = 1
+MetaMini.Size = UDim2.new(1, -62, 1, 0)
+MetaMini.Position = UDim2.new(0, 52, 0, 0)
+MetaMini.BackgroundTransparency = 1
+
 local NameMini = Instance.new("TextLabel", MetaMini)
-NameMini.Size = UDim2.new(1, 0, 0, 16) NameMini.Position = UDim2.new(0, 0, 0.5, -14) NameMini.BackgroundTransparency = 1 NameMini.Text = lp.Name or "Delta User" NameMini.TextColor3 = Colors.TextMain NameMini.Font = Enum.Font.SourceSansBold NameMini.TextSize = 12 NameMini.TextXAlignment = Enum.TextXAlignment.Left
+NameMini.Size = UDim2.new(1, 0, 0, 16)
+NameMini.Position = UDim2.new(0, 0, 0.5, -14)
+NameMini.BackgroundTransparency = 1
+NameMini.Text = lp.Name or "Delta User"
+NameMini.TextColor3 = Colors.TextMain
+NameMini.Font = Enum.Font.SourceSansBold
+NameMini.TextSize = 12
+NameMini.TextXAlignment = Enum.TextXAlignment.Left
+
 local StatusMini = Instance.new("TextLabel", MetaMini)
-StatusMini.Size = UDim2.new(1, 0, 0, 14) StatusMini.Position = UDim2.new(0, 0, 0.5, 2) StatusMini.BackgroundTransparency = 1 StatusMini.Text = "Active Premium"
+StatusMini.Size = UDim2.new(1, 0, 0, 14)
+StatusMini.Position = UDim2.new(0, 0, 0.5, 2)
+StatusMini.BackgroundTransparency = 1
+StatusMini.Text = "Active Premium"
+
+-- ============================================================================
+-- 👑 BROSA SYSTEM v5.2 — PRIVATE ELITE MONOLITH SCRIPT HUB [ЧАСТЬ 2 ИЗ 4]
+-- 🛠️ Среда выполнения: Delta Executor / Конструктор страниц контента и фабрик
+-- ============================================================================
+
 StatusMini.TextColor3 = Colors.StatusGreen
 StatusMini.Font = Enum.Font.SourceSansPro
 StatusMini.TextSize = 10
@@ -561,7 +678,12 @@ local function createSliderComponent(cardParent, optionKey, minVal, maxVal, defa
 	local initPercent = math.clamp((defaultVal - minVal) / (maxVal - minVal), 0, 1)
 	Fill.Size = UDim2.new(initPercent, 0, 1, 0) 
 	Thumb.Position = UDim2.new(initPercent, -6, 0.5, -6)
-	
+
+-- ============================================================================
+-- 👑 BROSA SYSTEM v5.2 — PRIVATE ELITE MONOLITH SCRIPT HUB [ЧАСТЬ 3 ИЗ 4]
+-- 🛠️ Среда выполнения: Delta Executor / Активация интерактивных фабрик и карточек
+-- ============================================================================
+
 	Track.InputBegan:Connect(function(input) 
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
 			isSliding = true 
@@ -610,7 +732,8 @@ createToggleComponent(createFeatureCard(PageDefense, "Anti-Grab", "Отключ�
 createToggleComponent(createFeatureCard(PageDefense, "Anti-Fling", "Постоянный мониторинг скорости персонажа и принудительный сброс Velocity до нуля при ударах."), "AntiFling")
 createToggleComponent(createFeatureCard(PageDefense, "God Mode", "Установка бесконечного здоровья или удаление локального хитбокса получения урона."), "GodMode", function(state)
 	if state then
-		local char = getChar() local hum = getHum()
+		local char = getChar()
+		local hum = getHum()
 		if char and hum then
 			local clone = hum:Clone()
 			hum:Destroy()
@@ -627,10 +750,19 @@ createSliderComponent(createFeatureCard(PageMovement, "WalkSpeed Changer", "Пе
 createSliderComponent(createFeatureCard(PageMovement, "JumpPower Changer", "Настройка высоты прыжка через изменение встроенных физических параметров прыжка."), "JumpPower", 50, 500, 50)
 createToggleComponent(createFeatureCard(PageMovement, "Infinite Jump", "Обход лимита прыжков за счет принудительной активации состояния Jumping при каждом нажатии пробела."), "InfJump")
 createToggleComponent(createFeatureCard(PageMovement, "Fly", "Полноценный контролируемый полет персонажа по направлению взгляда камеры."), "Fly", function(state)
-	local myRoot = getRoot() if not myRoot then return end
+	local myRoot = getRoot()
+	if not myRoot then return end
 	if state then
-		local bv = Instance.new("BodyVelocity") bv.Name = "BrosaFlyBV" bv.MaxForce = Vector3.new(1e6, 1e6, 1e6) bv.Velocity = Vector3.new(0, 0, 0) bv.Parent = myRoot
-		local bg = Instance.new("BodyGyro") bg.Name = "BrosaFlyBG" bg.MaxTorque = Vector3.new(1e6, 1e6, 1e6) bg.CFrame = camera.CFrame bg.Parent = myRoot
+		local bv = Instance.new("BodyVelocity")
+		bv.Name = "BrosaFlyBV"
+		bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+		bv.Velocity = Vector3.new(0, 0, 0)
+		bv.Parent = myRoot
+		local bg = Instance.new("BodyGyro")
+		bg.Name = "BrosaFlyBG"
+		bg.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+		bg.CFrame = camera.CFrame
+		bg.Parent = myRoot
 	else
 		if myRoot:FindFirstChild("BrosaFlyBV") then myRoot.BrosaFlyBV:Destroy() end
 		if myRoot:FindFirstChild("BrosaFlyBG") then myRoot.BrosaFlyBG:Destroy() end
@@ -642,10 +774,14 @@ createToggleComponent(createFeatureCard(PageMovement, "TP to Player", "Мгно�
 		local players = Players:GetPlayers()
 		if #players > 1 then
 			local randomPlayer = players[math.random(1, #players)]
-			while randomPlayer == lp do randomPlayer = players[math.random(1, #players)] end
+			while randomPlayer == lp do
+				randomPlayer = players[math.random(1, #players)]
+			end
 			if randomPlayer.Character and randomPlayer.Character:FindFirstChild("HumanoidRootPart") then
 				local myRoot = getRoot()
-				if myRoot then myRoot.CFrame = randomPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 2, 0) end
+				if myRoot then
+					myRoot.CFrame = randomPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 2, 0)
+				end
 			end
 		end
 		_G.BrosaHub.Flags.TPToPlayer = false
@@ -659,9 +795,15 @@ createToggleComponent(createFeatureCard(PageVisuals, "Name ESP", "Отрисов
 createToggleComponent(createFeatureCard(PageVisuals, "Tracer ESP", "Рисование двухмерных линий от центра вашего экрана к трехмерным координатам игроков."), "TracerESP")
 createToggleComponent(createFeatureCard(PageVisuals, "Fullbright", "Отключение глобальных теней GlobalShadows и выкручивание яркости Lighting на максимум."), "Fullbright", function(state)
 	if state then
-		Lighting.Brightness = 4 Lighting.GlobalShadows = false Lighting.Ambient = Color3.fromRGB(255, 255, 255) Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+		Lighting.Brightness = 4
+		Lighting.GlobalShadows = false
+		Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+		Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
 	else
-		Lighting.Brightness = 2 Lighting.GlobalShadows = true Lighting.Ambient = Color3.fromRGB(128, 128, 128) Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+		Lighting.Brightness = 2
+		Lighting.GlobalShadows = true
+		Lighting.Ambient = Color3.fromRGB(128, 128, 128)
+		Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
 	end
 end)
 createToggleComponent(createFeatureCard(PageVisuals, "Starfield Cosmos", "Замена стандартного неба на кастомную текстуру глубокого космоса и звездных галактик."), "Starfield")
@@ -669,19 +811,43 @@ createToggleComponent(createFeatureCard(PageVisuals, "Starfield Cosmos", "Зам
 -- PAGE 5: CROSSHAIR PANEL
 local crossCard = createFeatureCard(PageCrosshair, "Crosshair Style Selector", "Выбор геометрической формы кастомного прицела для Silent Aim локатора.")
 local crossBtn = Instance.new("TextButton", crossCard)
-crossBtn.Size = UDim2.new(0, 110, 0, 24) crossBtn.Position = UDim2.new(1, -124, 0.5, -12) crossBtn.BackgroundColor3 = Color3.fromRGB(39, 39, 42) crossBtn.Text = "Тип: Circle" crossBtn.TextColor3 = Colors.TextMain crossBtn.Font = Enum.Font.SourceSansProSemibold crossBtn.TextSize = 12 Instance.new("UICorner", crossBtn).CornerRadius = UDim.new(0, 4)
+crossBtn.Size = UDim2.new(0, 110, 0, 24)
+crossBtn.Position = UDim2.new(1, -124, 0.5, -12)
+crossBtn.BackgroundColor3 = Color3.fromRGB(39, 39, 42)
+crossBtn.Text = "Тип: Circle"
+crossBtn.TextColor3 = Colors.TextMain
+crossBtn.Font = Enum.Font.SourceSansProSemibold
+crossBtn.TextSize = 12
+Instance.new("UICorner", crossBtn).CornerRadius = UDim.new(0, 4)
 crossBtn.MouseButton1Click:Connect(function()
-	if _G.BrosaHub.Options.CrosshairType == "Circle" then _G.BrosaHub.Options.CrosshairType = "Cross" crossBtn.Text = "Тип: Cross"
-	elseif _G.BrosaHub.Options.CrosshairType == "Cross" then _G.BrosaHub.Options.CrosshairType = "Dot" crossBtn.Text = "Тип: Dot"
-	elseif _G.BrosaHub.Options.CrosshairType == "Dot" then _G.BrosaHub.Options.CrosshairType = "Combined" crossBtn.Text = "Тип: Combined"
-	else _G.BrosaHub.Options.CrosshairType = "Circle" crossBtn.Text = "Тип: Circle" end
+	if _G.BrosaHub.Options.CrosshairType == "Circle" then
+		_G.BrosaHub.Options.CrosshairType = "Cross"
+		crossBtn.Text = "Тип: Cross"
+	elseif _G.BrosaHub.Options.CrosshairType == "Cross" then
+		_G.BrosaHub.Options.CrosshairType = "Dot"
+		crossBtn.Text = "Тип: Dot"
+	elseif _G.BrosaHub.Options.CrosshairType == "Dot" then
+		_G.BrosaHub.Options.CrosshairType = "Combined"
+		crossBtn.Text = "Тип: Combined"
+	else
+		_G.BrosaHub.Options.CrosshairType = "Circle"
+		crossBtn.Text = "Тип: Circle"
+	end
 end)
 
 createSliderComponent(createFeatureCard(PageCrosshair, "Crosshair Thickness", "Толщина линий векторного перекрестия или окружности прицела."), "CrosshairThickness", 1, 10, 2)
 createSliderComponent(createFeatureCard(PageCrosshair, "Crosshair Polygon Sides", "Количество углов (сторон) для многоугольных кастомных форм перекрестий."), "CrosshairSides", 3, 12, 4)
+
 local colorCard = createFeatureCard(PageCrosshair, "Crosshair Color Shifter", "Циклическое переключение цветового спектра (RGB палитра) для прицела.")
 local colorBtn = Instance.new("TextButton", colorCard)
-colorBtn.Size = UDim2.new(0, 110, 0, 24) colorBtn.Position = UDim2.new(1, -124, 0.5, -12) colorBtn.BackgroundColor3 = Colors.Accent colorBtn.Text = "Сменить Цвет" colorBtn.TextColor3 = Color3.fromRGB(255, 255, 255) colorBtn.Font = Enum.Font.SourceSansProSemibold colorBtn.TextSize = 12 Instance.new("UICorner", colorBtn).CornerRadius = UDim.new(0, 4)
+colorBtn.Size = UDim2.new(0, 110, 0, 24)
+colorBtn.Position = UDim2.new(1, -124, 0.5, -12)
+colorBtn.BackgroundColor3 = Colors.Accent
+colorBtn.Text = "Сменить Цвет"
+colorBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+colorBtn.Font = Enum.Font.SourceSansProSemibold
+colorBtn.TextSize = 12
+Instance.new("UICorner", colorBtn).CornerRadius = UDim.new(0, 4)
 colorBtn.MouseButton1Click:Connect(function()
 	local r, g, b = math.random(100, 255), math.random(100, 255), math.random(100, 255)
 	_G.BrosaHub.Options.CrosshairColor = Color3.fromRGB(r, g, b)
@@ -695,22 +861,40 @@ createToggleComponent(createFeatureCard(PageExploits, "Mass Weld", "Сварив
 createToggleComponent(createFeatureCard(PageExploits, "Network Claim", "Получение эксклюзивных прав управления физикой окружающих предметов."), "NetClaim")
 createToggleComponent(createFeatureCard(PageExploits, "Lobby Freeze", "Спам импульсами касаний для тотального сброса FPS у сервера."), "LobbyFreeze")
 createToggleComponent(createFeatureCard(PageExploits, "Chat Spammer", "Автоматическая отправка заданного текста в чат по таймеру."), "ChatSpam")
-createToggleComponent(createFeatureCard(PageExploits, "Anti-Report", "Блокировка отображения списка игроков и панели логов."), "AntiReport", function(state) local g = CoreGui:FindFirstChild("PlayerList") if g then g.Enabled = not state end end)
+createToggleComponent(createFeatureCard(PageExploits, "Anti-Report", "Блокировка отображения списка игроков и панели логов."), "AntiReport", function(state)
+	local g = CoreGui:FindFirstChild("PlayerList")
+	if g then g.Enabled = not state end
+end)
 createToggleComponent(createFeatureCard(PageExploits, "Potato PC Mode", "Оптимизация производительности: полное отключение тяжелых текстур игрового мира."), "PotatoPC", function(state)
 	if state then
-		for _, obj in pairs(workspace:GetDescendants()) do if obj:IsA("Texture") or obj:IsA("Decal") then _G.BrosaHub.Cache.OriginalTextures[obj] = obj.Texture obj.Texture = "" end end
+		for _, obj in pairs(workspace:GetDescendants()) do
+			if obj:IsA("Texture") or obj:IsA("Decal") then
+				_G.BrosaHub.Cache.OriginalTextures[obj] = obj.Texture
+				obj.Texture = ""
+			end
+		end
 	else
-		for obj, tex in pairs(_G.BrosaHub.Cache.OriginalTextures) do if obj and obj.Parent then obj.Texture = tex end end
+		for obj, tex in pairs(_G.BrosaHub.Cache.OriginalTextures) do
+			if obj and obj.Parent then obj.Texture = tex end
+		end
 		table.clear(_G.BrosaHub.Cache.OriginalTextures)
 	end
 end)
 createSliderComponent(createFeatureCard(PageExploits, "Menu Stretch Width", "Динамическая настройка горизонтального растяжения главного окна меню."), "StretchX", 400, 1200, 840, function(val)
-	WindowContainer.Size = UDim2.new(0, val, 0, _G.BrosaHub.Options.StretchY) WindowContainer.Position = UDim2.new(0.5, -(val / 2), 0.5, -(_G.BrosaHub.Options.StretchY / 2))
+	WindowContainer.Size = UDim2.new(0, val, 0, _G.BrosaHub.Options.StretchY)
+	WindowContainer.Position = UDim2.new(0.5, -(val / 2), 0.5, -(_G.BrosaHub.Options.StretchY / 2))
 end)
 createSliderComponent(createFeatureCard(PageExploits, "Menu Stretch Height", "Динамическая настройка вертикального растяжения главного окна меню."), "StretchY", 300, 900, 560, function(val)
-	WindowContainer.Size = UDim2.new(0, _G.BrosaHub.Options.StretchX, 0, val) WindowContainer.Position = UDim2.new(0.5, -(_G.BrosaHub.Options.StretchX / 2), 0.5, -(val / 2))
+	WindowContainer.Size = UDim2.new(0, _G.BrosaHub.Options.StretchX, 0, val)
+	WindowContainer.Position = UDim2.new(0.5, -(_G.BrosaHub.Options.StretchX / 2), 0.5, -(val / 2))
 end)
 createToggleComponent(createFeatureCard(PageExploits, "Auto-Farm Money", "Авто-телепорт предметов в зоны продажи на карте."), "AutoFarm")
+
+-- ============================================================================
+-- 👑 BROSA SYSTEM v5.2 — PRIVATE ELITE MONOLITH SCRIPT HUB [ЧАСТЬ 4 ИЗ 4]
+-- 🛠️ Среда выполнения: Delta Executor / Физика, Кастомные Прицелы Drawing API
+-- ============================================================================
+
 createToggleComponent(createFeatureCard(PageExploits, "Auto-Quest", "Самостоятельное перемещение по точкам сбора квестов."), "AutoQuest")
 
 -- Geometric Objects Vector Drawing API (Прицелы и Локаторы)
@@ -730,8 +914,10 @@ TracerLine.Visible = false
 table.insert(_G.BrosaHub.Cache.DrawingObjects, TracerLine)
 
 local CrosshairLines = {
-	L1 = Drawing.new("Line"), L2 = Drawing.new("Line"),
-	L3 = Drawing.new("Line"), L4 = Drawing.new("Line"),
+	L1 = Drawing.new("Line"),
+	L2 = Drawing.new("Line"),
+	L3 = Drawing.new("Line"),
+	L4 = Drawing.new("Line"),
 	CenterDot = Drawing.new("Circle")
 }
 for _, obj in pairs(CrosshairLines) do
@@ -1000,8 +1186,12 @@ _G.BrosaHub.Cache.Connections["AimLoop"] = RunService.RenderStepped:Connect(func
 			if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
 				tPart.Velocity = (tPart.Position - myRoot.Position).Unit * _G.BrosaHub.Options.ThrowForce
 			end
-		else TracerLine.Visible = false end
-	else TracerLine.Visible = false end
+		else
+			TracerLine.Visible = false
+		end
+	else
+		TracerLine.Visible = false
+	end
 end)
 
 _G.BrosaHub.Cache.Connections["ViewportResizeListener"] = camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
@@ -1027,7 +1217,10 @@ task.spawn(function()
 							newHl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 							newHl.Parent = p.Character
 						end
-					elseif hl then hl:Destroy() end
+					elseif hl then
+						hl:Destroy()
+					end
+					
 					if p.Character:FindFirstChild("Head") then
 						local gui = p.Character.Head:FindFirstChild("BrosaNameGui")
 						if _G.BrosaHub.Flags.NameESP then
@@ -1047,8 +1240,11 @@ task.spawn(function()
 								tl.Parent = bgui
 								bgui.Parent = p.Character.Head
 							end
-						elseif gui then gui:Destroy() end
+						elseif gui then
+							gui:Destroy()
+						end
 					end
+					
 					if p.Character:FindFirstChild("HumanoidRootPart") then
 						local eRoot = p.Character.HumanoidRootPart
 						local oldBeam = workspace:FindFirstChild("BrosaTracer_" .. p.Name)
@@ -1069,6 +1265,7 @@ task.spawn(function()
 							beam.Parent = workspace
 						end
 					end
+					
 					if _G.BrosaHub.Flags.Kidnap and p.Character:FindFirstChild("HumanoidRootPart") then
 						local eRoot = p.Character.HumanoidRootPart
 						if (myRoot.Position - eRoot.Position).Magnitude < 15 then
@@ -1077,6 +1274,7 @@ task.spawn(function()
 					end
 				end
 			end
+			
 			if _G.BrosaHub.Flags.AutoFarm then
 				local mapFolder = workspace:FindFirstChild("Coins") or workspace:FindFirstChild("Money") or workspace:FindFirstChild("Cash") or workspace
 				for _, object in pairs(mapFolder:GetChildren()) do
@@ -1089,6 +1287,7 @@ task.spawn(function()
 					end
 				end
 			end
+			
 			if _G.BrosaHub.Flags.AutoQuest then
 				local questFolder = workspace:FindFirstChild("Quests") or workspace:FindFirstChild("QuestGivers")
 				if questFolder then
@@ -1142,6 +1341,7 @@ local function SecureCharacterPhysics(char)
 		end
 	end)
 end
+
 if lp.Character then SecureCharacterPhysics(lp.Character) end
 lp.CharacterAdded:Connect(SecureCharacterPhysics)
 
@@ -1159,7 +1359,9 @@ task.spawn(function()
 				end
 			end
 			task.wait(_G.BrosaHub.Options.ChatSpamDelay)
-		else task.wait(0.5) end
+		else
+			task.wait(0.5)
+		end
 	end
 end)
 
@@ -1199,16 +1401,31 @@ local function UpdateBtnDrag(input)
 	local delta = input.Position - BtnDragStart
 	ToggleBtn.Position = UDim2.new(BtnStartPosition.X.Scale, BtnStartPosition.X.Offset + delta.X, BtnStartPosition.Y.Scale, BtnStartPosition.Y.Offset + delta.Y)
 end
+
 ToggleBtn.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		BtnDragging = true
 		BtnDragStart = input.Position
 		BtnStartPosition = ToggleBtn.Position
-		input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then BtnDragging = false end end)
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				BtnDragging = false
+			end
+		end)
 	end
 end)
-ToggleBtn.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then BtnDragInput = input end end)
-UserInputService.InputChanged:Connect(function(input) if input == BtnDragInput and BtnDragging then UpdateBtnDrag(input) end end)
+
+ToggleBtn.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		BtnDragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == BtnDragInput and BtnDragging then
+		UpdateBtnDrag(input)
+	end
+end)
 
 WindowContainer.Visible = true
 MainPanel.Visible = true
