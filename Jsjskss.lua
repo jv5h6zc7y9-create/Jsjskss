@@ -1,5 +1,5 @@
 -- ============================================================================
--- 👑 BROSA SYSTEM v5.2 — PRIVATE ELITE MONOLITH SCRIPT HUB [ЧАСТЬ 1 ИЗ 4]
+-- 👑 BROSA SYSTEM v5.2 — PRIVATE ELITE MONOLITH SCRIPT HUB [ПОЛНАЯ СБОРКА]
 -- 🛠️ Среда выполнения: Delta Executor / Спецификация движка: Luau (Roblox API)
 -- 🎯 Оптимизировано под режим: Fling Things and People (FTAP)
 -- 🎨 Дизайн-код: Полная поддержка интерфейса v4.5 с кастомными прицелами
@@ -1444,3 +1444,649 @@ ToggleBtn.MouseButton1Click:Connect(function()
 end)
 
 print("[👑 BROSA HUB v5.2]: Финальная часть успешно скомпилирована. Архитектура монолита полностью завершена.")
+
+-- ============================================================================
+-- ДОБАВЛЕНИЕ МЕНЮ AURORA (вставляется в конец, ничего не удаляет)
+-- ============================================================================
+
+--[[
+	Aurora Menu — iOS-style animated Roblox UI
+	Добавляет второе меню с настройками функций и профилем
+	Никак не влияет на основное меню BROSA
+]]
+
+local AuroraTheme = {
+	Bg = Color3.fromRGB(24, 24, 29),
+	BgStrong = Color3.fromRGB(30, 30, 37),
+	Text = Color3.fromRGB(245, 245, 247),
+	TextDim = Color3.fromRGB(152, 152, 163),
+	AccentA = Color3.fromRGB(124, 108, 255),
+	AccentB = Color3.fromRGB(79, 216, 255),
+	Danger = Color3.fromRGB(255, 95, 87),
+	Success = Color3.fromRGB(52, 211, 153),
+}
+
+local AuroraGui = Instance.new("ScreenGui")
+AuroraGui.Name = "AuroraMenu"
+AuroraGui.ResetOnSpawn = false
+AuroraGui.IgnoreGuiInset = true
+AuroraGui.Parent = lp:WaitForChild("PlayerGui")
+
+-- ЛАУНЧЕР (плавающая кнопка)
+local AuroraLauncher = Instance.new("TextButton")
+AuroraLauncher.Name = "Launcher"
+AuroraLauncher.Text = "⚡"
+AuroraLauncher.Size = UDim2.fromOffset(56, 56)
+AuroraLauncher.Position = UDim2.new(1, -28 - 56, 0, 28)
+AuroraLauncher.BackgroundColor3 = AuroraTheme.BgStrong
+AuroraLauncher.BackgroundTransparency = 0.1
+AuroraLauncher.Font = Enum.Font.GothamBold
+AuroraLauncher.TextSize = 24
+AuroraLauncher.TextColor3 = AuroraTheme.Text
+AuroraLauncher.Parent = AuroraGui
+local launcherCorner = Instance.new("UICorner", AuroraLauncher)
+launcherCorner.CornerRadius = UDim.new(0, 18)
+local launcherStroke = Instance.new("UIStroke", AuroraLauncher)
+launcherStroke.Color = AuroraTheme.Text
+launcherStroke.Thickness = 1
+launcherStroke.Transparency = 0.88
+
+-- DRAG ДЛЯ ЛАУНЧЕРА
+local auroraDrag, auroraDragInput, auroraDragStart, auroraStartPos
+AuroraLauncher.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		auroraDrag = true
+		auroraDragStart = input.Position
+		auroraStartPos = AuroraLauncher.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then auroraDrag = false end
+		end)
+	end
+end)
+AuroraLauncher.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then auroraDragInput = input end
+end)
+UserInputService.InputChanged:Connect(function(input)
+	if input == auroraDragInput and auroraDrag then
+		local delta = input.Position - auroraDragStart
+		AuroraLauncher.Position = UDim2.new(
+			auroraStartPos.X.Scale, auroraStartPos.X.Offset + delta.X,
+			auroraStartPos.Y.Scale, auroraStartPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+-- ОКНО
+local auroraOpen = false
+local AuroraWindow = Instance.new("Frame")
+AuroraWindow.Name = "Window"
+AuroraWindow.Size = UDim2.fromOffset(340, 520)
+AuroraWindow.Position = UDim2.new(0, 28, 0, 28)
+AuroraWindow.BackgroundColor3 = AuroraTheme.Bg
+AuroraWindow.BackgroundTransparency = 0.12
+AuroraWindow.ClipsDescendants = true
+AuroraWindow.Visible = false
+AuroraWindow.Parent = AuroraGui
+local windowCorner = Instance.new("UICorner", AuroraWindow)
+windowCorner.CornerRadius = UDim.new(0, 28)
+local windowStroke = Instance.new("UIStroke", AuroraWindow)
+windowStroke.Color = AuroraTheme.Text
+windowStroke.Thickness = 1
+windowStroke.Transparency = 0.9
+
+local AuroraScale = Instance.new("UIScale", AuroraWindow)
+AuroraScale.Scale = 0.1
+
+-- ЗАГОЛОВОК
+local AuroraHeader = Instance.new("Frame")
+AuroraHeader.Size = UDim2.new(1, 0, 0, 54)
+AuroraHeader.BackgroundTransparency = 1
+AuroraHeader.Parent = AuroraWindow
+
+local headerLine = Instance.new("Frame")
+headerLine.Size = UDim2.new(1, 0, 0, 1)
+headerLine.Position = UDim2.new(0, 0, 1, -1)
+headerLine.BackgroundColor3 = AuroraTheme.Text
+headerLine.BackgroundTransparency = 0.92
+headerLine.Parent = AuroraHeader
+
+local titleWrap = Instance.new("Frame")
+titleWrap.Size = UDim2.new(1, -90, 1, 0)
+titleWrap.Position = UDim2.fromOffset(16, 0)
+titleWrap.BackgroundTransparency = 1
+titleWrap.Parent = AuroraHeader
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Text = "BROSA SETTINGS"
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 15
+titleLabel.TextColor3 = AuroraTheme.Text
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Size = UDim2.new(1, 0, 0, 18)
+titleLabel.Position = UDim2.fromOffset(0, 10)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Parent = titleWrap
+
+local subLabel = Instance.new("TextLabel")
+subLabel.Text = "Настройки функций · Aurora UI"
+subLabel.Font = Enum.Font.Gotham
+subLabel.TextSize = 11
+subLabel.TextColor3 = AuroraTheme.TextDim
+subLabel.TextXAlignment = Enum.TextXAlignment.Left
+subLabel.Size = UDim2.new(1, 0, 0, 14)
+subLabel.Position = UDim2.fromOffset(0, 30)
+subLabel.BackgroundTransparency = 1
+subLabel.Parent = titleWrap
+
+-- КНОПКИ ЗАГОЛОВКА
+local function auroraHeaderBtn(glyph, color, posX)
+	local btn = Instance.new("TextButton")
+	btn.Text = glyph
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 18
+	btn.TextColor3 = color
+	btn.Size = UDim2.fromOffset(30, 30)
+	btn.Position = UDim2.new(1, posX, 0, 12)
+	btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	btn.BackgroundTransparency = 0.95
+	btn.AutoButtonColor = false
+	btn.Parent = AuroraHeader
+	local btnCorner = Instance.new("UICorner", btn)
+	btnCorner.CornerRadius = UDim.new(0, 10)
+	btn.MouseEnter:Connect(function()
+		TweenService:Create(btn, TweenInfo.new(0.18, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.85}):Play()
+	end)
+	btn.MouseLeave:Connect(function()
+		TweenService:Create(btn, TweenInfo.new(0.18, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.95}):Play()
+	end)
+	return btn
+end
+
+local auroraMinimize = auroraHeaderBtn("—", AuroraTheme.Text, -76)
+local auroraClose = auroraHeaderBtn("×", AuroraTheme.Danger, -40)
+
+auroraMinimize.MouseButton1Click:Connect(function()
+	if auroraOpen then
+		auroraOpen = false
+		TweenService:Create(AuroraScale, TweenInfo.new(0.32, Enum.EasingStyle.Quad), {Scale = 0.08}):Play()
+		task.wait(0.3)
+		AuroraWindow.Visible = false
+		AuroraLauncher.Visible = true
+		TweenService:Create(AuroraLauncher, TweenInfo.new(0.32, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.1}):Play()
+	end
+end)
+
+auroraClose.MouseButton1Click:Connect(function()
+	TweenService:Create(AuroraScale, TweenInfo.new(0.32, Enum.EasingStyle.Quad), {Scale = 0.05}):Play()
+	TweenService:Create(AuroraWindow, TweenInfo.new(0.32, Enum.EasingStyle.Quad), {BackgroundTransparency = 1}):Play()
+	task.wait(0.4)
+	AuroraGui:Destroy()
+end)
+
+-- DRAG ДЛЯ ОКНА
+local adrag, adragInput, adragStart, astartPos
+AuroraHeader.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		adrag = true
+		adragStart = input.Position
+		astartPos = AuroraWindow.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then adrag = false end
+		end)
+	end
+end)
+AuroraHeader.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then adragInput = input end
+end)
+UserInputService.InputChanged:Connect(function(input)
+	if input == adragInput and adrag then
+		local delta = input.Position - adragStart
+		AuroraWindow.Position = UDim2.new(
+			astartPos.X.Scale, astartPos.X.Offset + delta.X,
+			astartPos.Y.Scale, astartPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+AuroraLauncher.MouseButton1Click:Connect(function()
+	if not auroraOpen then
+		auroraOpen = true
+		AuroraLauncher.Visible = false
+		AuroraWindow.Visible = true
+		AuroraScale.Scale = 0.1
+		TweenService:Create(AuroraScale, TweenInfo.new(0.42, Enum.EasingStyle.Back), {Scale = 1}):Play()
+	end
+end)
+
+-- ТЕЛО (вкладки)
+local AuroraBody = Instance.new("Frame")
+AuroraBody.Size = UDim2.new(1, -20, 1, -54 - 64)
+AuroraBody.Position = UDim2.fromOffset(10, 54)
+AuroraBody.BackgroundTransparency = 1
+AuroraBody.Parent = AuroraWindow
+
+-- ТАБ-БАР
+local AuroraTabBar = Instance.new("Frame")
+AuroraTabBar.Size = UDim2.new(1, -20, 0, 56)
+AuroraTabBar.Position = UDim2.new(0, 10, 1, -56)
+AuroraTabBar.BackgroundTransparency = 1
+AuroraTabBar.Parent = AuroraWindow
+
+local AuroraTabLayout = Instance.new("UIListLayout")
+AuroraTabLayout.FillDirection = Enum.FillDirection.Horizontal
+AuroraTabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+AuroraTabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+AuroraTabLayout.Padding = UDim.new(0, 6)
+AuroraTabLayout.Parent = AuroraTabBar
+
+local auroraTabs = {}
+local auroraActiveTab = nil
+
+local function auroraSelectTab(tabData)
+	if auroraActiveTab then
+		auroraActiveTab.Page.Visible = false
+		TweenService:Create(auroraActiveTab.Label, TweenInfo.new(0.32, Enum.EasingStyle.Quad), {TextColor3 = AuroraTheme.TextDim}):Play()
+	end
+	auroraActiveTab = tabData
+	tabData.Page.Visible = true
+	TweenService:Create(tabData.Label, TweenInfo.new(0.32, Enum.EasingStyle.Quad), {TextColor3 = AuroraTheme.Text}):Play()
+end
+
+local function auroraCreateTab(name)
+	local page = Instance.new("ScrollingFrame")
+	page.Size = UDim2.fromScale(1, 1)
+	page.BackgroundTransparency = 1
+	page.BorderSizePixel = 0
+	page.ScrollBarThickness = 3
+	page.ScrollBarImageTransparency = 0.6
+	page.CanvasSize = UDim2.new(0, 0, 0, 0)
+	page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	page.Visible = false
+	page.Parent = AuroraBody
+	
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 8)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = page
+
+	local btn = Instance.new("TextButton")
+	btn.Text = ""
+	btn.AutoButtonColor = false
+	btn.Size = UDim2.new(0.5, -3, 1, 0)
+	btn.BackgroundTransparency = 1
+	btn.Parent = AuroraTabBar
+	
+	local label = Instance.new("TextLabel")
+	label.Text = name
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 10.5
+	label.TextColor3 = AuroraTheme.TextDim
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Parent = btn
+
+	local tabData = {Name = name, Page = page, Button = btn, Label = label}
+	table.insert(auroraTabs, tabData)
+	btn.MouseButton1Click:Connect(function() auroraSelectTab(tabData) end)
+	if not auroraActiveTab then auroraSelectTab(tabData) end
+
+	-- API ВКЛАДКИ
+	local api = {}
+
+	function api:AddToggle(opts)
+		opts = opts or {}
+		local state = opts.Default or false
+
+		local row = Instance.new("Frame")
+		row.Size = UDim2.new(1, 0, 0, 58)
+		row.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		row.BackgroundTransparency = 0.965
+		row.Parent = page
+		local rowCorner = Instance.new("UICorner", row)
+		rowCorner.CornerRadius = UDim.new(0, 16)
+		local rowStroke = Instance.new("UIStroke", row)
+		rowStroke.Color = AuroraTheme.AccentA
+		rowStroke.Thickness = 1
+		rowStroke.Transparency = 0.65
+
+		local label1 = Instance.new("TextLabel")
+		label1.Text = opts.Name or "Функция"
+		label1.Font = Enum.Font.GothamBold
+		label1.TextSize = 14
+		label1.TextColor3 = AuroraTheme.Text
+		label1.TextXAlignment = Enum.TextXAlignment.Left
+		label1.Size = UDim2.new(1, -110, 0, 16)
+		label1.Position = UDim2.fromOffset(16, 12)
+		label1.BackgroundTransparency = 1
+		label1.Parent = row
+
+		local label2 = Instance.new("TextLabel")
+		label2.Text = opts.Description or ""
+		label2.Font = Enum.Font.Gotham
+		label2.TextSize = 11
+		label2.TextColor3 = AuroraTheme.TextDim
+		label2.TextXAlignment = Enum.TextXAlignment.Left
+		label2.Size = UDim2.new(1, -110, 0, 14)
+		label2.Position = UDim2.fromOffset(16, 30)
+		label2.BackgroundTransparency = 1
+		label2.Parent = row
+
+		local switch = Instance.new("Frame")
+		switch.Size = UDim2.fromOffset(44, 26)
+		switch.Position = UDim2.new(1, -56, 0.5, -13)
+		switch.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		switch.BackgroundTransparency = 0.85
+		switch.Parent = row
+		local switchCorner = Instance.new("UICorner", switch)
+		switchCorner.CornerRadius = UDim.new(0, 13)
+
+		local knob = Instance.new("Frame")
+		knob.Size = UDim2.fromOffset(20, 20)
+		knob.Position = UDim2.fromOffset(3, 3)
+		knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		knob.Parent = switch
+		local knobCorner = Instance.new("UICorner", knob)
+		knobCorner.CornerRadius = UDim.new(0, 10)
+
+		local hitbox = Instance.new("TextButton")
+		hitbox.Text = ""
+		hitbox.AutoButtonColor = false
+		hitbox.Size = UDim2.fromScale(1, 1)
+		hitbox.BackgroundTransparency = 1
+		hitbox.Parent = row
+
+		local function render(animated)
+			local info = animated and TweenInfo.new(0.42, Enum.EasingStyle.Back) or TweenInfo.new(0)
+			if state then
+				TweenService:Create(switch, TweenInfo.new(0.32, Enum.EasingStyle.Quad), {BackgroundColor3 = AuroraTheme.AccentA, BackgroundTransparency = 0}):Play()
+				TweenService:Create(knob, info, {Position = UDim2.fromOffset(21, 3)}):Play()
+				TweenService:Create(rowStroke, TweenInfo.new(0.32, Enum.EasingStyle.Quad), {Transparency = 0.35}):Play()
+			else
+				TweenService:Create(switch, TweenInfo.new(0.32, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.85}):Play()
+				TweenService:Create(knob, info, {Position = UDim2.fromOffset(3, 3)}):Play()
+				TweenService:Create(rowStroke, TweenInfo.new(0.32, Enum.EasingStyle.Quad), {Transparency = 0.65}):Play()
+			end
+		end
+		render(false)
+
+		hitbox.MouseButton1Click:Connect(function()
+			state = not state
+			render(true)
+			if opts.Callback then task.spawn(opts.Callback, state) end
+		end)
+
+		return {Set = function(_, v) state = v; render(true) end, Get = function() return state end}
+	end
+
+	function api:AddToggleWithSettings(opts)
+		opts = opts or {}
+		local state = opts.Default or false
+		local expanded = false
+
+		local container = Instance.new("Frame")
+		container.Size = UDim2.new(1, 0, 0, 58)
+		container.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		container.BackgroundTransparency = 0.965
+		container.ClipsDescendants = true
+		container.Parent = page
+		local containerCorner = Instance.new("UICorner", container)
+		containerCorner.CornerRadius = UDim.new(0, 16)
+		local containerStroke = Instance.new("UIStroke", container)
+		containerStroke.Color = AuroraTheme.AccentA
+		containerStroke.Thickness = 1
+		containerStroke.Transparency = 0.65
+
+		local row = Instance.new("Frame")
+		row.Size = UDim2.new(1, 0, 0, 58)
+		row.BackgroundTransparency = 1
+		row.Parent = container
+
+		local label1 = Instance.new("TextLabel")
+		label1.Text = opts.Name or "Функция"
+		label1.Font = Enum.Font.GothamBold
+		label1.TextSize = 14
+		label1.TextColor3 = AuroraTheme.Text
+		label1.TextXAlignment = Enum.TextXAlignment.Left
+		label1.Size = UDim2.new(1, -50, 0, 16)
+		label1.Position = UDim2.fromOffset(16, 12)
+		label1.BackgroundTransparency = 1
+		label1.Parent = row
+
+		local label2 = Instance.new("TextLabel")
+		label2.Text = opts.Description or "Нажми, чтобы открыть настройки"
+		label2.Font = Enum.Font.Gotham
+		label2.TextSize = 11
+		label2.TextColor3 = AuroraTheme.TextDim
+		label2.TextXAlignment = Enum.TextXAlignment.Left
+		label2.Size = UDim2.new(1, -50, 0, 14)
+		label2.Position = UDim2.fromOffset(16, 30)
+		label2.BackgroundTransparency = 1
+		label2.Parent = row
+
+		local chevron = Instance.new("TextLabel")
+		chevron.Text = "▼"
+		chevron.Font = Enum.Font.GothamBold
+		chevron.TextSize = 14
+		chevron.TextColor3 = AuroraTheme.TextDim
+		chevron.Size = UDim2.fromOffset(20, 20)
+		chevron.Position = UDim2.new(1, -34, 0.5, -10)
+		chevron.BackgroundTransparency = 1
+		chevron.Parent = row
+
+		local settingsWrap = Instance.new("Frame")
+		settingsWrap.Size = UDim2.new(1, -32, 0, 70)
+		settingsWrap.Position = UDim2.fromOffset(16, 62)
+		settingsWrap.BackgroundTransparency = 1
+		settingsWrap.Parent = container
+
+		local sliderValue = opts.SliderDefault or 50
+		local sliderLabel = Instance.new("TextLabel")
+		sliderLabel.Text = (opts.SliderLabel or "Интенсивность") .. ": " .. sliderValue .. "%"
+		sliderLabel.Font = Enum.Font.Gotham
+		sliderLabel.TextSize = 11
+		sliderLabel.TextColor3 = AuroraTheme.TextDim
+		sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+		sliderLabel.Size = UDim2.new(1, 0, 0, 14)
+		sliderLabel.BackgroundTransparency = 1
+		sliderLabel.Parent = settingsWrap
+
+		local sliderTrack = Instance.new("Frame")
+		sliderTrack.Size = UDim2.new(1, 0, 0, 4)
+		sliderTrack.Position = UDim2.fromOffset(0, 20)
+		sliderTrack.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		sliderTrack.BackgroundTransparency = 0.85
+		sliderTrack.Parent = settingsWrap
+		local trackCorner = Instance.new("UICorner", sliderTrack)
+		trackCorner.CornerRadius = UDim.new(0, 2)
+
+		local sliderFill = Instance.new("Frame")
+		sliderFill.Size = UDim2.new(sliderValue / 100, 0, 1, 0)
+		sliderFill.BackgroundColor3 = AuroraTheme.AccentA
+		sliderFill.Parent = sliderTrack
+		local fillCorner = Instance.new("UICorner", sliderFill)
+		fillCorner.CornerRadius = UDim.new(0, 2)
+
+		local sliderKnob = Instance.new("TextButton")
+		sliderKnob.Text = ""
+		sliderKnob.AutoButtonColor = false
+		sliderKnob.Size = UDim2.fromOffset(16, 16)
+		sliderKnob.Position = UDim2.new(sliderValue / 100, -8, 0.5, -8)
+		sliderKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		sliderKnob.Parent = sliderTrack
+		local knobCorner2 = Instance.new("UICorner", sliderKnob)
+		knobCorner2.CornerRadius = UDim.new(0, 8)
+
+		local draggingSlider = false
+		sliderKnob.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				draggingSlider = true
+			end
+		end)
+		UserInputService.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				draggingSlider = false
+			end
+		end)
+		RunService.RenderStepped:Connect(function()
+			if not draggingSlider then return end
+			local mouse = UserInputService:GetMouseLocation()
+			local relX = math.clamp((mouse.X - sliderTrack.AbsolutePosition.X) / sliderTrack.AbsoluteSize.X, 0, 1)
+			sliderValue = math.floor(relX * 100)
+			sliderFill.Size = UDim2.new(relX, 0, 1, 0)
+			sliderKnob.Position = UDim2.new(relX, -8, 0.5, -8)
+			sliderLabel.Text = (opts.SliderLabel or "Интенсивность") .. ": " .. sliderValue .. "%"
+			if opts.OnSlider then task.spawn(opts.OnSlider, sliderValue) end
+		end)
+
+		local hitbox = Instance.new("TextButton")
+		hitbox.Text = ""
+		hitbox.AutoButtonColor = false
+		hitbox.Size = UDim2.new(1, 0, 0, 58)
+		hitbox.BackgroundTransparency = 1
+		hitbox.Parent = row
+
+		hitbox.MouseButton1Click:Connect(function()
+			expanded = not expanded
+			state = expanded
+			local targetHeight = expanded and 140 or 58
+			TweenService:Create(container, TweenInfo.new(0.32, Enum.EasingStyle.Quad), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+			TweenService:Create(chevron, TweenInfo.new(0.42, Enum.EasingStyle.Back), {Rotation = expanded and 180 or 0}):Play()
+			TweenService:Create(containerStroke, TweenInfo.new(0.32, Enum.EasingStyle.Quad), {Transparency = expanded and 0.35 or 0.65}):Play()
+			if opts.Callback then task.spawn(opts.Callback, state) end
+		end)
+
+		return {GetSlider = function() return sliderValue end, IsExpanded = function() return expanded end}
+	end
+
+	function api:AddProfileCard()
+		local hero = Instance.new("Frame")
+		hero.Size = UDim2.new(1, 0, 0, 150)
+		hero.BackgroundTransparency = 1
+		hero.Parent = page
+
+		local avatar = Instance.new("ImageLabel")
+		avatar.Size = UDim2.fromOffset(78, 78)
+		avatar.Position = UDim2.new(0.5, -39, 0, 6)
+		avatar.BackgroundColor3 = AuroraTheme.AccentA
+		avatar.Parent = hero
+		local avatarCorner = Instance.new("UICorner", avatar)
+		avatarCorner.CornerRadius = UDim.new(0, 22)
+
+		task.spawn(function()
+			local ok, content = pcall(function()
+				return Players:GetUserThumbnailAsync(lp.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size180x180)
+			end)
+			if ok and content then avatar.Image = content end
+		end)
+
+		local nameLabel = Instance.new("TextLabel")
+		nameLabel.Text = lp.DisplayName
+		nameLabel.Font = Enum.Font.GothamBold
+		nameLabel.TextSize = 17
+		nameLabel.TextColor3 = AuroraTheme.Text
+		nameLabel.Size = UDim2.new(1, 0, 0, 20)
+		nameLabel.Position = UDim2.fromOffset(0, 90)
+		nameLabel.BackgroundTransparency = 1
+		nameLabel.Parent = hero
+
+		local userLabel = Instance.new("TextLabel")
+		userLabel.Text = "@" .. lp.Name .. " · ID " .. lp.UserId
+		userLabel.Font = Enum.Font.Gotham
+		userLabel.TextSize = 11.5
+		userLabel.TextColor3 = AuroraTheme.TextDim
+		userLabel.Size = UDim2.new(1, 0, 0, 16)
+		userLabel.Position = UDim2.fromOffset(0, 112)
+		userLabel.BackgroundTransparency = 1
+		userLabel.Parent = hero
+
+		local stats = Instance.new("Frame")
+		stats.Size = UDim2.new(1, 0, 0, 60)
+		stats.Position = UDim2.fromOffset(0, 156)
+		stats.BackgroundTransparency = 1
+		stats.Parent = page
+
+		local statsLayout = Instance.new("UIListLayout")
+		statsLayout.FillDirection = Enum.FillDirection.Horizontal
+		statsLayout.Padding = UDim.new(0, 8)
+		statsLayout.Parent = stats
+
+		local function statChip(value, label)
+			local chip = Instance.new("Frame")
+			chip.Size = UDim2.new(0.333, -6, 1, 0)
+			chip.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			chip.BackgroundTransparency = 0.96
+			chip.Parent = stats
+			local chipCorner = Instance.new("UICorner", chip)
+			chipCorner.CornerRadius = UDim.new(0, 14)
+
+			local valLabel = Instance.new("TextLabel")
+			valLabel.Text = tostring(value)
+			valLabel.Font = Enum.Font.GothamBold
+			valLabel.TextSize = 14
+			valLabel.TextColor3 = AuroraTheme.Text
+			valLabel.Size = UDim2.new(1, 0, 0, 18)
+			valLabel.Position = UDim2.fromOffset(0, 10)
+			valLabel.BackgroundTransparency = 1
+			valLabel.Parent = chip
+
+			local descLabel = Instance.new("TextLabel")
+			descLabel.Text = label
+			descLabel.Font = Enum.Font.Gotham
+			descLabel.TextSize = 9.5
+			descLabel.TextColor3 = AuroraTheme.TextDim
+			descLabel.Size = UDim2.new(1, 0, 0, 12)
+			descLabel.Position = UDim2.fromOffset(0, 30)
+			descLabel.BackgroundTransparency = 1
+			descLabel.Parent = chip
+		end
+
+		statChip("Online", "Статус")
+		statChip(math.floor((lp.AccountAge or 0) / 365), "Лет")
+		statChip(lp.UserId, "ID")
+	end
+
+	return api
+end
+
+-- СОЗДАНИЕ ВКЛАДОК AURORA
+local auroraFunctionsTab = auroraCreateTab("Функции")
+local auroraProfileTab = auroraCreateTab("Профиль")
+
+-- ПРИВЯЗКА ВСЕХ ФУНКЦИЙ BROSA К AURORA МЕНЮ
+auroraFunctionsTab:AddToggle({Name = "Fling Aura", Description = "Разброс игроков в радиусе", Default = _G.BrosaHub.Flags.FlingAura, Callback = function(v) _G.BrosaHub.Flags.FlingAura = v end})
+auroraFunctionsTab:AddToggle({Name = "Click Fling", Description = "Флинг по клику", Default = _G.BrosaHub.Flags.ClickFling, Callback = function(v) _G.BrosaHub.Flags.ClickFling = v end})
+auroraFunctionsTab:AddToggle({Name = "Fling All", Description = "Циклический флинг всех", Default = _G.BrosaHub.Flags.FlingAll, Callback = function(v) _G.BrosaHub.Flags.FlingAll = v end})
+auroraFunctionsTab:AddToggle({Name = "Kill Aura", Description = "Авто-убийство в радиусе", Default = _G.BrosaHub.Flags.KillAura, Callback = function(v) _G.BrosaHub.Flags.KillAura = v end})
+auroraFunctionsTab:AddToggle({Name = "Bring All", Description = "Стягивание всех к тебе", Default = _G.BrosaHub.Flags.BringAll, Callback = function(v) _G.BrosaHub.Flags.BringAll = v end})
+auroraFunctionsTab:AddToggle({Name = "Props Fling", Description = "Запуск предметов карты", Default = _G.BrosaHub.Flags.PropsFling, Callback = function(v) _G.BrosaHub.Flags.PropsFling = v end})
+auroraFunctionsTab:AddToggle({Name = "Orbit Player", Description = "Вращение вокруг жертвы", Default = _G.BrosaHub.Flags.OrbitPlayer, Callback = function(v) _G.BrosaHub.Flags.OrbitPlayer = v end})
+auroraFunctionsTab:AddToggle({Name = "Silent Aim", Description = "Магнитный захват", Default = _G.BrosaHub.Flags.GrabEnabled, Callback = function(v) _G.BrosaHub.Flags.GrabEnabled = v end})
+auroraFunctionsTab:AddToggle({Name = "Anti-Grab", Description = "Защита от захвата", Default = _G.BrosaHub.Flags.AntiGrab, Callback = function(v) _G.BrosaHub.Flags.AntiGrab = v end})
+auroraFunctionsTab:AddToggle({Name = "Anti-Fling", Description = "Сброс скорости при ударе", Default = _G.BrosaHub.Flags.AntiFling, Callback = function(v) _G.BrosaHub.Flags.AntiFling = v end})
+auroraFunctionsTab:AddToggle({Name = "God Mode", Description = "Бессмертие", Default = _G.BrosaHub.Flags.GodMode, Callback = function(v) _G.BrosaHub.Flags.GodMode = v end})
+auroraFunctionsTab:AddToggle({Name = "Anti-Void", Description = "Телепорт из-под карты", Default = _G.BrosaHub.Flags.AntiVoid, Callback = function(v) _G.BrosaHub.Flags.AntiVoid = v end})
+auroraFunctionsTab:AddToggle({Name = "Anti-Ragdoll", Description = "Блокировка падений", Default = _G.BrosaHub.Flags.AntiRagdoll, Callback = function(v) _G.BrosaHub.Flags.AntiRagdoll = v end})
+auroraFunctionsTab:AddToggle({Name = "Infinite Jump", Description = "Бесконечные прыжки", Default = _G.BrosaHub.Flags.InfJump, Callback = function(v) _G.BrosaHub.Flags.InfJump = v end})
+auroraFunctionsTab:AddToggle({Name = "Fly", Description = "Режим полёта", Default = _G.BrosaHub.Flags.Fly, Callback = function(v) _G.BrosaHub.Flags.Fly = v end})
+auroraFunctionsTab:AddToggle({Name = "Noclip", Description = "Проход сквозь стены", Default = _G.BrosaHub.Flags.Noclip, Callback = function(v) _G.BrosaHub.Flags.Noclip = v end})
+auroraFunctionsTab:AddToggle({Name = "TP to Player", Description = "Телепорт к случайному", Default = _G.BrosaHub.Flags.TPToPlayer, Callback = function(v) _G.BrosaHub.Flags.TPToPlayer = v end})
+auroraFunctionsTab:AddToggle({Name = "Click TP", Description = "Телепорт по клику", Default = _G.BrosaHub.Flags.ClickTP, Callback = function(v) _G.BrosaHub.Flags.ClickTP = v end})
+auroraFunctionsTab:AddToggle({Name = "Player ESP", Description = "Подсветка игроков", Default = _G.BrosaHub.Flags.PlayerESP, Callback = function(v) _G.BrosaHub.Flags.PlayerESP = v end})
+auroraFunctionsTab:AddToggle({Name = "Name ESP", Description = "Имена над головами", Default = _G.BrosaHub.Flags.NameESP, Callback = function(v) _G.BrosaHub.Flags.NameESP = v end})
+auroraFunctionsTab:AddToggle({Name = "Tracer ESP", Description = "Линии-трассеры", Default = _G.BrosaHub.Flags.TracerESP, Callback = function(v) _G.BrosaHub.Flags.TracerESP = v end})
+auroraFunctionsTab:AddToggle({Name = "Fullbright", Description = "Максимальная яркость", Default = _G.BrosaHub.Flags.Fullbright, Callback = function(v) _G.BrosaHub.Flags.Fullbright = v end})
+auroraFunctionsTab:AddToggle({Name = "Starfield", Description = "Космическое небо", Default = _G.BrosaHub.Flags.Starfield, Callback = function(v) _G.BrosaHub.Flags.Starfield = v end})
+auroraFunctionsTab:AddToggle({Name = "Kidnap", Description = "Утаскивание жертвы", Default = _G.BrosaHub.Flags.Kidnap, Callback = function(v) _G.BrosaHub.Flags.Kidnap = v end})
+auroraFunctionsTab:AddToggle({Name = "Mass Weld", Description = "Сварка предметов", Default = _G.BrosaHub.Flags.MassWeld, Callback = function(v) _G.BrosaHub.Flags.MassWeld = v end})
+auroraFunctionsTab:AddToggle({Name = "Network Claim", Description = "Расширение радиуса", Default = _G.BrosaHub.Flags.NetClaim, Callback = function(v) _G.BrosaHub.Flags.NetClaim = v end})
+auroraFunctionsTab:AddToggle({Name = "Lobby Freeze", Description = "Спам для лагов", Default = _G.BrosaHub.Flags.LobbyFreeze, Callback = function(v) _G.BrosaHub.Flags.LobbyFreeze = v end})
+auroraFunctionsTab:AddToggle({Name = "Chat Spam", Description = "Авто-спам в чат", Default = _G.BrosaHub.Flags.ChatSpam, Callback = function(v) _G.BrosaHub.Flags.ChatSpam = v end})
+auroraFunctionsTab:AddToggle({Name = "Anti-Report", Description = "Скрытие списка игроков", Default = _G.BrosaHub.Flags.AntiReport, Callback = function(v) _G.BrosaHub.Flags.AntiReport = v end})
+auroraFunctionsTab:AddToggle({Name = "Potato PC", Description = "Отключение текстур", Default = _G.BrosaHub.Flags.PotatoPC, Callback = function(v) _G.BrosaHub.Flags.PotatoPC = v end})
+auroraFunctionsTab:AddToggle({Name = "Auto-Farm", Description = "Авто-сбор монет", Default = _G.BrosaHub.Flags.AutoFarm, Callback = function(v) _G.BrosaHub.Flags.AutoFarm = v end})
+auroraFunctionsTab:AddToggle({Name = "Auto-Quest", Description = "Авто-прохождение квестов", Default = _G.BrosaHub.Flags.AutoQuest, Callback = function(v) _G.BrosaHub.Flags.AutoQuest = v end})
+
+-- ПРОФИЛЬ В AURORA
+auroraProfileTab:AddProfileCard()
+
+print("[AURORA MENU]: Добавлено в BROSA SYSTEM. Все функции привязаны.")
