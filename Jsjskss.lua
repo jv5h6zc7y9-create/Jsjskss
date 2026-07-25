@@ -9,7 +9,6 @@ local CurrentCamera = Workspace.CurrentCamera
 
 -- // Настройки (Config)
 local Configuration = {
-    -- Настройки ESP
     TeamCheck = false,                           -- false: подсветка для всех, true: только враги
     ColorVisible = Color3.fromRGB(0, 255, 0),    -- Зеленый (на виду)
     ColorHidden = Color3.fromRGB(255, 0, 0),     -- Красный (за стеной)
@@ -17,15 +16,14 @@ local Configuration = {
     FillTransparency = 0.4,
     OutlineTransparency = 0.2,
 
-    -- Настройки Аимбота (Aimbot) для мобилок (Delta / iPad)
     AimbotEnabled = true,                        -- Включен ли аимбот
     AimPart = "Head",                            -- Куда целиться: "Head" или "HumanoidRootPart"
-    Smoothness = 4,                              -- Плавность наводки (чем меньше, тем быстрее)
-    FOV = 180,                                   -- Радиус круга захвата в центре экрана
-    ShowFOV = true                               -- Показывать ли круг FOV по центру экрана
+    Smoothness = 4,                              -- Плавность наводки
+    FOV = 180,                                   -- Радиус круга захвата
+    ShowFOV = true                               -- Показывать ли круг FOV
 }
 
--- // Создание визуального круга FOV точно по центру экрана
+-- // Создание круга FOV (фиксируем центр по реальному размеру экрана устройства)
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = Configuration.ShowFOV
 FOVCircle.Transparency = 0.7
@@ -34,10 +32,8 @@ FOVCircle.Thickness = 1
 FOVCircle.Filled = false
 FOVCircle.Radius = Configuration.FOV
 
--- // Таблицы для хранения данных
 local ActiveESPInstances = {}
 
--- // Функция полной очистки старой подсветки
 local function CleanupESP(player)
     if ActiveESPInstances[player] then
         if ActiveESPInstances[player].Connection then
@@ -57,7 +53,7 @@ local function CleanupESP(player)
     end
 end
 
--- // Функция поиска лучшей цели в центре экрана (для мобильных устройств)
+-- // Поиск цели строго относительно математического центра экрана
 local function GetClosestPlayerToCenter()
     local closestTarget = nil
     local shortestDistance = Configuration.FOV
@@ -96,7 +92,6 @@ local function GetClosestPlayerToCenter()
     return closestTarget
 end
 
--- // Функция создания и динамического обновления ESP
 local function InitializeESP(player)
     if player == LocalPlayer then return end
 
@@ -186,7 +181,6 @@ local function InitializeESP(player)
     end)
 end
 
--- // Инициализация игроков
 for _, existingPlayer in ipairs(Players:GetPlayers()) do
     InitializeESP(existingPlayer)
 end
@@ -194,7 +188,7 @@ end
 Players.PlayerAdded:Connect(InitializeESP)
 Players.PlayerRemoving:Connect(CleanupESP)
 
--- // Главный цикл аимбота и центровки FOV для iPad / Delta
+-- // Жесткая привязка круга строго к центру экрана без привязки к пальцу/мыши
 RunService.RenderStepped:Connect(function()
     local viewportSize = CurrentCamera.ViewportSize
     FOVCircle.Position = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
@@ -202,7 +196,6 @@ RunService.RenderStepped:Connect(function()
     FOVCircle.Visible = Configuration.ShowFOV
 
     if Configuration.AimbotEnabled then
-        -- На телефоне/айпаде без мыши аимбот работает постоянно, когда враг попадает в центральный круг FOV
         local targetPart = GetClosestPlayerToCenter()
         if targetPart then
             local currentCFrame = CurrentCamera.CFrame
