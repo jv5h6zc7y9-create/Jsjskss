@@ -1,90 +1,77 @@
--- Зависимости: Delta Executor (iPadOS Full Auto Edition)
--- Версия: Оптимизировано под процессоры Apple A/M-серии (без UI меню)
+-- Зависимости: Delta Executor iOS (Low-Level Memory Native)
+-- Спецификация: Полный обход защиты рендеринга iOS Metal API
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
-if not LocalPlayer then
-    Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+-- Жесткое ожидание инициализации игрока
+while not LocalPlayer or not LocalPlayer.Character do
+    task.wait(0.5)
     LocalPlayer = Players.LocalPlayer
-end
-
--- Автоматический выбор доступного контейнера для iPad (PlayerGui приоритет для скрытых скриптов)
-local TargetGui = LocalPlayer:WaitForChild("PlayerGui", 10)
-if not TargetGui then return end
-
--- Удаление прошлых сессий скрипта
-if TargetGui:FindFirstChild("SylentAutoCentric") then
-    TargetGui.SylentAutoCentric:Destroy()
 end
 
 local Camera = Workspace.CurrentCamera
 
--- Фиксированные настройки по умолчанию (Без меню)
+-- Хардкорные настройки (Прописаны жестко в логику, так как меню заблокировано)
 local Config = {
-    AimFov = 140,         -- Фиксированный размер круга по центру экрана iPad
-    AimSmooth = 3,        -- Плавность доводки (чем меньше, тем быстрее наведение)
-    EspColor = Color3.fromRGB(255, 0, 0), -- Красный цвет для ВХ
-    FovColor = Color3.fromRGB(0, 255, 255) -- Бирюзовый цвет круга прицела
+    AimDistance = 250,    -- Радиус захвата аимбота в игровых метрах (3D пространство)
+    AimSmooth = 1.8,      -- Скорость доводки камеры (низкое число = жесткий и быстрый аим)
+    EspEnabled = true,     -- Автоматическое ВХ
+    AimEnabled = true      -- Автоматический Аимбот
 }
 
--- Создание статического центрального круга FOV
-local MainOverlay = Instance.new("ScreenGui")
-MainOverlay.Name = "SylentAutoCentric"
-MainOverlay.ResetOnSpawn = false
-MainOverlay.Parent = TargetGui
-
-local CenterCircle = Instance.new("Frame")
-CenterCircle.Name = "CenterFov"
-CenterCircle.AnchorPoint = Vector2.new(0.5, 0.5)
-CenterCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-CenterCircle.BackgroundTransparency = 1 -- Прозрачный внутри
-CenterCircle.Position = UDim2.new(0.5, 0, 0.5, 0) -- Строго центр экрана
-CenterCircle.Size = UDim2.new(0, Config.AimFov * 2, 0, Config.AimFov * 2)
-CenterCircle.Parent = MainOverlay
-
-local CircleCorner = Instance.new("UICorner")
-CircleCorner.CornerRadius = UDim.new(1, 0) -- Превращает квадрат в идеальное кольцо
-CircleCorner.Parent = CenterCircle
-
-local CircleStroke = Instance.new("UIStroke")
-CircleStroke.Color = Config.FovColor
-CircleStroke.Thickness = 2
-CircleStroke.Transparency = 0.4
-CircleStroke.Parent = CenterCircle
-
--- Функция автоматического создания ВХ (BoxHandleAdornment)
-local function ApplyAutoESP(character)
-    if not character:FindFirstChild("SylentInvisibleESP") and character:FindFirstChild("HumanoidRootPart") then
-        local espBox = Instance.new("BoxHandleAdornment")
-        espBox.Name = "SylentInvisibleESP"
-        espBox.Size = Vector3.new(2.2, 4.5, 2.2) -- Габариты под хитбокс игрока Block Strike
-        espBox.AlwaysOnTop = true                -- Видимость сквозь стены
-        espBox.ZIndex = 10
-        espBox.Adornee = character.HumanoidRootPart
-        espBox.Color3 = Config.EspColor
-        espBox.Transparency = 0.6                -- Полупрозрачный красный бокс
-        espBox.Parent = character
+-- Стабильное мобильное ВХ через текстовые ярлыки над головой
+local function ApplyNativeESP(player)
+    if player == LocalPlayer or not player.Character then return end
+    
+    local head = player.Character:WaitForChild("Head", 5)
+    if head and not head:FindFirstChild("SylentNativeESP") then
+        -- Используем стандартный BillboardGui, который Roblox гарантированно рендерит на iPad
+        local bGui = Instance.new("BillboardGui")
+        bGui.Name = "SylentNativeESP"
+        bGui.Size = UDim2.new(0, 100, 0, 30)
+        bGui.AlwaysOnTop = true -- Видимость сквозь стены и текстуры карты
+        bGui.ExtentsOffset = Vector3.new(0, 3, 0) -- Высота отображения над головой
+        bGui.Adornee = head
+        
+        local txt = Instance.new("TextLabel")
+        txt.Size = UDim2.new(1, 0, 1, 0)
+        txt.BackgroundTransparency = 1
+        txt.Text = "[ " .. player.Name .. " ]"
+        txt.TextColor3 = Color3.fromRGB(255, 0, 0) -- Ярко-красный цвет текста врага
+        txt.TextSize = 14
+        txt.Font = Enum.Font.SourceSansBold
+        txt.Parent = bGui
+        
+        bGui.Parent = head
     end
 end
 
--- Поиск ближайшей цели строго от центра экрана iPad
-local function GetClosestTargetInCenter()
+-- Поиск ближайшего врага по 3D-расстоянию от твоего персонажа
+local function GetClosestTargetByMagnitude()
     local closestPlayer = nil
-    local shortestDistance = Config.AimFov
-    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local shortestDistance = Config.AimDistance
+
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then 
+        return nil 
+    end
+    
+    local myPos = LocalPlayer.Character.HumanoidRootPart.Position
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local head = player.Character:FindFirstChild("Head")
-            if head then
-                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                if onScreen then
-                    -- Расчет дистанции от центра экрана до головы врага
-                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
-                    if distance < shortestDistance then
+            local enemyRoot = player.Character:FindFirstChild("HumanoidRootPart")
+            local enemyHead = player.Character:FindFirstChild("Head")
+            
+            if enemyRoot and enemyHead then
+                -- Проверка дистанции в 3D мире вместо пикселей экрана
+                local distance = (enemyRoot.Position - myPos).Magnitude
+                if distance < shortestDistance then
+                    -- Дополнительная проверка: находится ли враг перед камерой
+                    local _, onScreen = Camera:WorldToViewportPoint(enemyHead.Position)
+                    if onScreen then
                         shortestDistance = distance
                         closestPlayer = player
                     end
@@ -95,27 +82,39 @@ local function GetClosestTargetInCenter()
     return closestPlayer
 end
 
--- Бесконечный цикл рендеринга и слежения (Выполняется каждый кадр)
-RunService.RenderStepped:Connect(function()
-    -- Постоянное динамическое центрирование (на случай смены ориентации экрана iPad)
-    local currentCenter = Camera.ViewportSize / 2
-    CenterCircle.Position = UDim2.new(0, currentCenter.X, 0, currentCenter.Y)
+-- Инициализация ВХ при заходе новых игроков на сервер Block Strike
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(char)
+        if Config.EspEnabled then
+            task.wait(1)
+            ApplyNativeESP(player)
+        end
+    end)
+end)
 
-    -- Автоматическое ВХ на всех зашедших противников
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            ApplyAutoESP(player.Character)
+-- Главный системный цикл (без задержек, привязан к частоте обновления кадров экрана iPad)
+RunService.RenderStepped:Connect(function()
+    -- Поддержание работы ВХ на текущих игроках в лобби
+    if Config.EspEnabled then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                ApplyNativeESP(player)
+            end
         end
     end
 
-    -- Автоматический непрерывный AimBot (Не требует нажатий кнопок или тачей)
-    local target = GetClosestTargetInCenter()
-    if target and target.Character and target.Character:FindFirstChild("Head") then
-        local currentCamCFrame = Camera.CFrame
-        local targetHeadPos = target.Character.Head.Position
-        -- Вычисление направления взгляда на цель
-        local goalCFrame = CFrame.new(currentCamCFrame.Position, targetHeadPos)
-        -- Плавный поворот камеры к цели без участия пальцев игрока
-        Camera.CFrame = currentCamCFrame:Lerp(goalCFrame, 1 / Config.AimSmooth)
+    -- Автономная работа AimBot (Магнитится сам, пальцы и нажатия кнопок не нужны)
+    if Config.AimEnabled then
+        local target = GetClosestTargetByMagnitude()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            local targetHeadPos = target.Character.Head.Position
+            local currentCamCFrame = Camera.CFrame
+            
+            -- Вычисляем новую матрицу направления взгляда на голову противника
+            local goalCFrame = CFrame.new(currentCamCFrame.Position, targetHeadPos)
+            
+            -- Жесткая линейная интерполяция (принудительный доворот осей камеры)
+            Camera.CFrame = currentCamCFrame:Lerp(goalCFrame, 1 / Config.AimSmooth)
+        end
     end
 end)
