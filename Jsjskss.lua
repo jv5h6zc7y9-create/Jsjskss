@@ -1,5 +1,5 @@
--- Зависимости: Delta Executor API, Luau Environment
--- Адаптировано под мобильные сенсорные экраны планшетов (Block Strike Roblox)
+-- Зависимости: Delta Executor 2026 Mobile API
+-- Исправленная версия с нативным ESP (Highlight) для Block Strike
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -7,21 +7,20 @@ local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
--- Конфигурация скрипта
 local Config = {
     AimbotEnabled = true,
     TeamCheck = true,
-    AimPart = "Head",          -- Только в голову
-    Smoothness = 0.1,          -- Плавность наведения для сенсора
-    FOV_Radius = 120,          -- Радиус круга захвата
+    AimPart = "Head",
+    Smoothness = 0.12,
+    FOV_Radius = 130,
     FOV_Color = Color3.fromRGB(255, 255, 255),
     
     ESP_Enabled = true,
-    VisibleColor = Color3.fromRGB(0, 255, 0),   -- Зеленый (виден)
-    HiddenColor = Color3.fromRGB(255, 0, 0)    -- Красный (за стеной)
+    VisibleColor = Color3.fromRGB(0, 255, 0), -- Зеленый
+    HiddenColor = Color3.fromRGB(255, 0, 0)   -- Красный
 }
 
--- Автоматическое создание круга FOV по центру экрана
+-- Отрисовка круга FOV (Оставляем стабильный Drawing)
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Thickness = 1.5
 FOVCircle.NumSides = 60
@@ -30,55 +29,60 @@ FOVCircle.Filled = false
 FOVCircle.Visible = true
 FOVCircle.Color = Config.FOV_Color
 
--- Функция обновления позиции FOV при изменении разрешения экрана планшета
-local function UpdateFOVPosition()
-    local ViewportSize = Camera.ViewportSize
-    FOVCircle.Position = Vector2.new(ViewportSize.X / 2, ViewportSize.Y / 2)
+local function UpdateFOV()
+    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 end
 
--- Хранилище для графических элементов ESP (чтобы не забивать память)
-local ESP_Storage = {}
-
--- Функция проверки видимости (Wall Check)
-local function IsVisible(targetPart, character)
-    local ray = Ray.new(Camera.CFrame.Position, (targetPart.Position - Camera.CFrame.Position).Unit * 1000)
-    -- Игнорируем себя и персонажа цели при расчете препятствий
-    local hit, position = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character, character})
+-- Новая функция проверки видимости (Фикс Wall Check)
+local function CheckVisibility(character)
+    local root = character:FindFirstChild("HumanoidRootPart")
+    if not root then return false end
     
-    if hit and hit:IsDescendantOf(workspace) and not hit:IsDescendantOf(character) then
-        return false -- За стеной
+    local origin = Camera.CFrame.Position
+    local direction = (root.Position - origin).Unit * 1000
+    local raycastParams = RaycastParams.new()
+    
+    -- Игнорируем себя и всю модель проверяемого врага
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, character}
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    
+    local result = workspace:Raycast(origin, direction, raycastParams)
+    
+    if result and result.Instance then
+        -- Если луч попал в объект карты до игрока — значит он за стеной
+        return false
     end
-    return true -- Виден напрямую
+    return true
 end
 
--- Функция создания ESP для игрока
-local function CreateESP(player)
-    if ESP_Storage[player] then return end
-
-    local Box = Drawing.new("Square")
-    Box.Thickness = 2
-    Box.Filled = false
-    Box.Visible = false
-
-    ESP_Storage[player] = Box
-end
-
--- Удаление ESP
-local function RemoveESP(player)
-    if ESP_Storage[player] then
-        ESP_Storage[player]:Remove()
-        ESP_Storage[player] = nil
+-- Функция применения нативного ВХ через Highlight
+local function ApplyNativeESP(player)
+    if player == LocalPlayer then return end
+    
+    local function SetupCharacter(char)
+        -- Удаляем старый хайлайт, если он был
+        if char:FindFirstChild("Sylent_ESP") then
+            char["Sylent_ESP"]:Destroy()
+        end
+        
+        -- Создаем нативный слой подсветки
+        local Highlight = Instance.new("Highlight")
+        Highlight.Name = "Sylent_ESP"
+        Highlight.FillAlpha = 0.5         -- Прозрачность заливки
+        Highlight.OutlineAlpha = 0        -- Без внешней обводки для экономии FPS
+        Highlight.Parent = char
+        Highlight.Enabled = false
     end
+    
+    if player.Character then SetupCharacter(player.Character) end
+    player.CharacterAdded:Connect(SetupCharacter)
 end
 
--- Инициализация текущих игроков
-for _, p in ipairs(Players:GetPlayers()) do
-    if p ~= LocalPlayer then CreateESP(p) end
-end
-Players.PlayerAdded:Connect(CreateESP)
-Players.PlayerRemoving:Connect(RemoveESP)
+-- Инициализация ВХ для всех игроков
+for _, p in ipairs(Players:GetPlayers()) do ApplyNativeESP(p) end
+Players.PlayerAdded:Connect(ApplyNativeESP)
 
--- Поиск валидной цели для Аима
+-- Поиск цели для Аима
 local function GetClosestTarget()
     local MaxDist = Config.FOV_Radius
     local Target = nil
@@ -86,7 +90,6 @@ local function GetClosestTarget()
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            -- Фильтр союзников (на союзников не работает)
             if not Config.TeamCheck or player.Team ~= LocalPlayer.Team then
                 local char = player.Character
                 if char and char:FindFirstChild(Config.AimPart) and char:FindFirstChildOfClass("Humanoid") then
@@ -96,7 +99,6 @@ local function GetClosestTarget()
 
                         if onScreen then
                             local dist = (Vector2.new(screenPos.X, screenPos.Y) - Center).Magnitude
-                            -- Цель должна быть внутри круга FOV
                             if dist < MaxDist then
                                 MaxDist = dist
                                 Target = head
@@ -110,51 +112,45 @@ local function GetClosestTarget()
     return Target
 end
 
--- Главный рабочий цикл
+-- Рабочий цикл рендера
 RunService.RenderStepped:Connect(function()
-    UpdateFOVPosition()
-    local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-
-    -- Логика ВХ (ESP)
+    UpdateFOV()
+    
+    -- Обновление ВХ
     if Config.ESP_Enabled then
-        for player, box in pairs(ESP_Storage) do
-            local char = player.Character
-            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") and char:FindFirstChildOfClass("Humanoid").Health > 0 then
-                -- Проверка на команду для ВХ
-                if not Config.TeamCheck or player.Team ~= LocalPlayer.Team then
-                    local hrp = char.HumanoidRootPart
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-
-                    if onScreen then
-                        -- Динамический расчет размера бокса в зависимости от дистанции
-                        local scale = 1000 / (Camera.CFrame.Position - hrp.Position).Magnitude
-                        box.Size = Vector2.new(120 * scale, 180 * scale)
-                        box.Position = Vector2.new(screenPos.X - box.Size.X / 2, screenPos.Y - box.Size.Y / 2)
-                        
-                        -- Проверка видимости для смены цвета (Зеленый/Красный)
-                        if IsVisible(char.Head, char) then
-                            box.Color = Config.VisibleColor
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                local char = player.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    local esp = char:FindFirstChild("Sylent_ESP")
+                    
+                    -- Проверка на команду
+                    if esp and (not Config.TeamCheck or player.Team ~= LocalPlayer.Team) then
+                        local humanoid = char:FindFirstChildOfClass("Humanoid")
+                        if humanoid and humanoid.Health > 0 then
+                            esp.Enabled = true
+                            
+                            -- Динамический Wall Check: Зеленый/Красный силуэт
+                            if CheckVisibility(char) then
+                                esp.FillColor = Config.VisibleColor
+                            else
+                                esp.FillColor = Config.HiddenColor
+                            end
                         else
-                            box.Color = Config.HiddenColor
+                            esp.Enabled = false
                         end
-                        box.Visible = true
-                    else
-                        box.Visible = false
+                    elseif esp then
+                        esp.Enabled = false -- Отключаем ВХ для тиммейтов
                     end
-                else
-                    box.Visible = false -- Скрываем союзников
                 end
-            else
-                box.Visible = false
             end
         end
     end
 
-    -- Логика Аимбота (Срабатывает автоматически, если цель в FOV)
+    -- Авто-Аимбот в голову
     if Config.AimbotEnabled then
         local targetHead = GetClosestTarget()
         if targetHead then
-            -- Наведение камеры строго на голову с учетом плавности
             local targetCFrame = CFrame.lookAt(Camera.CFrame.Position, targetHead.Position)
             Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, Config.Smoothness)
         end
