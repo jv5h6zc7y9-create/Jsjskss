@@ -1,52 +1,57 @@
--- Зависимости: Delta Executor iOS (iPadOS)
--- Оптимизация: Специально под сенсорные экраны Apple
+-- Зависимости: Delta Executor (iOS / iPadOS Touch API)
+-- Оптимизация под мобильную раскладку Block Strike
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
 
--- Ждем полной загрузки локального игрока
 local LocalPlayer = Players.LocalPlayer
 if not LocalPlayer then
     Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
     LocalPlayer = Players.LocalPlayer
 end
 
--- Папка для интерфейса строго внутри PlayerGui (для работы на iPad)
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
-if not PlayerGui then return end
+-- Безопасный выбор контейнера для iPad
+local ScreenContainer = nil
+local success, err = pcall(function()
+    ScreenContainer = CoreGui
+end)
+if not success or not ScreenContainer then
+    ScreenContainer = LocalPlayer:WaitForChild("PlayerGui")
+end
 
--- Удаляем старые копии скрипта, если они были
-if PlayerGui:FindFirstChild("SylentIPadGui") then
-    PlayerGui.SylentIPadGui:Destroy()
+-- Очистка старых интерфейсов
+if ScreenContainer:FindFirstChild("SylentBlockStrikeGui") then
+    ScreenContainer.SylentBlockStrikeGui:Destroy()
 end
 
 local Camera = Workspace.CurrentCamera
 
--- Настройки
+-- Конфигурация чита
 local Config = {
     AimEnabled = true,
-    AimFov = 130,          -- Оптимальный размер для экрана iPad
-    AimSmooth = 3,         -- Плавность (ниже = быстрее наводка)
+    AimFov = 120,          -- Оптимальный радиус под экранные кнопки
+    AimSmooth = 2.5,       -- Скорость доводки (меньше = резче)
     WallHackEnabled = true,
     SpeedHackEnabled = true,
-    WalkSpeed = 35
+    WalkSpeed = 30,
+    IsAiming = false       -- Флаг нажатия на кнопку стрельбы/прицела
 }
 
--- Создаем корневой ScreenGui внутри PlayerGui
+-- Создание графической оболочки
 local MainGui = Instance.new("ScreenGui")
-MainGui.Name = "SylentIPadGui"
+MainGui.Name = "SylentBlockStrikeGui"
 MainGui.ResetOnSpawn = false
-MainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-MainGui.Parent = PlayerGui
+MainGui.Parent = ScreenContainer
 
--- Круг FOV (Простой UI Frame, адаптированный под Retina-дисплеи iPad)
+-- Круг FOV (Адаптирован под центр мобильного прицела)
 local FovFrame = Instance.new("Frame")
 FovFrame.Name = "FovCircle"
 FovFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 FovFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-FovFrame.BackgroundTransparency = 1 -- Полностью прозрачный фон
+FovFrame.BackgroundTransparency = 1
 FovFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 FovFrame.Size = UDim2.new(0, Config.AimFov * 2, 0, Config.AimFov * 2)
 FovFrame.Parent = MainGui
@@ -56,138 +61,116 @@ FovCorner.CornerRadius = UDim.new(1, 0)
 FovCorner.Parent = FovFrame
 
 local FovStroke = Instance.new("UIStroke")
-FovStroke.Color = Color3.fromRGB(255, 0, 100) -- Яркий розовый, заметный на iPad
+FovStroke.Color = Color3.fromRGB(0, 255, 0) -- Зеленый неоновый под цвет Block Strike
 FovStroke.Thickness = 2
-FovStroke.Transparency = 0.3
+FovStroke.Transparency = 0.4
 FovStroke.Parent = FovFrame
 
--- Мобильное Меню управления
+-- Ультра-компактное полупрозрачное меню, чтобы не перекрывать кнопки iPad
 local MenuFrame = Instance.new("Frame")
-MenuFrame.Size = UDim2.new(0, 240, 0, 220)
-MenuFrame.Position = UDim2.new(0.1, 0, 0.15, 0) -- Сдвинуто, чтобы удобно нажимать пальцем
-MenuFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MenuFrame.Size = UDim2.new(0, 180, 0, 150)
+MenuFrame.Position = UDim2.new(0.02, 0, 0.25, 0) -- Слева над джойстиком ходьбы
+MenuFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MenuFrame.BackgroundTransparency = 0.3
 MenuFrame.BorderSizePixel = 0
 MenuFrame.Active = true
-MenuFrame.Draggable = true -- Перетаскивание по экрану iPad
+MenuFrame.Draggable = true
 MenuFrame.Parent = MainGui
 
 local MenuCorner = Instance.new("UICorner")
-MenuCorner.CornerRadius = UDim.new(0, 12)
+MenuCorner.CornerRadius = UDim.new(0, 10)
 MenuCorner.Parent = MenuFrame
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 35)
+Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundTransparency = 1
-Title.Text = "SYLENT V1 [iPad iOS]"
-Title.TextColor3 = Color3.fromRGB(255, 0, 100)
-Title.TextSize = 16
+Title.Text = "SYLENT BS V1"
+Title.TextColor3 = Color3.fromRGB(0, 255, 0)
+Title.TextSize = 14
 Title.Font = Enum.Font.GothamBold
 Title.Parent = MenuFrame
 
--- Контроллер FOV (Меньше / Больше)
-local FovText = Instance.new("TextLabel")
-FovText.Size = UDim2.new(1, 0, 0, 30)
-FovText.Position = UDim2.new(0, 0, 0, 40)
-FovText.BackgroundTransparency = 1
-FovText.Text = "Радиус FOV: " .. tostring(Config.AimFov)
-FovText.TextColor3 = Color3.fromRGB(255, 255, 255)
-FovText.TextSize = 14
-FovText.Font = Enum.Font.Gotham
-FovText.Parent = MenuFrame
-
+-- Кнопки изменения радиуса круга (Больше / Меньше)
 local BtnLess = Instance.new("TextButton")
-BtnLess.Size = UDim2.new(0, 50, 0, 30)
-BtnLess.Position = UDim2.new(0, 20, 0, 75)
+BtnLess.Size = UDim2.new(0, 70, 0, 30)
+BtnLess.Position = UDim2.new(0, 15, 0, 40)
 BtnLess.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-BtnLess.Text = "Меньше"
+BtnLess.Text = "FOV -"
 BtnLess.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnLess.TextSize = 12
 BtnLess.Parent = MenuFrame
 
 local BtnMore = Instance.new("TextButton")
-BtnMore.Size = UDim2.new(0, 50, 0, 30)
-BtnMore.Position = UDim2.new(1, -70, 0, 75)
+BtnMore.Size = UDim2.new(0, 70, 0, 30)
+BtnMore.Position = UDim2.new(1, -85, 0, 40)
 BtnMore.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-BtnMore.Text = "Больше"
+BtnMore.Text = "FOV +"
 BtnMore.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnMore.TextSize = 12
 BtnMore.Parent = MenuFrame
 
--- Кнопки-переключатели
+-- Кнопка ВХ
 local BtnESP = Instance.new("TextButton")
-BtnESP.Size = UDim2.new(0, 200, 0, 35)
-BtnESP.Position = UDim2.new(0, 20, 0, 120)
-BtnESP.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
-BtnESP.Text = "ВХ (ESP): ВКЛ"
+BtnESP.Size = UDim2.new(0, 150, 0, 30)
+BtnESP.Position = UDim2.new(0, 15, 0, 80)
+BtnESP.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
+BtnESP.Text = "ВХ: ВКЛ"
 BtnESP.TextColor3 = Color3.fromRGB(255, 255, 255)
 BtnESP.Font = Enum.Font.GothamBold
 BtnESP.Parent = MenuFrame
 
-local BtnSpeed = Instance.new("TextButton")
-BtnSpeed.Size = UDim2.new(0, 200, 0, 35)
-BtnSpeed.Position = UDim2.new(0, 20, 0, 165)
-BtnSpeed.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
-BtnSpeed.Text = "Скорость: ВКЛ"
-BtnSpeed.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnSpeed.Font = Enum.Font.GothamBold
-BtnSpeed.Parent = MenuFrame
-
--- Скругление углов для кнопок (iPad стиль)
-for _, btn in ipairs({BtnLess, BtnMore, BtnESP, BtnSpeed}) do
+-- Скругление кнопок
+for _, b in ipairs({BtnLess, BtnMore, BtnESP}) do
     local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 6)
-    c.Parent = btn
+    c.CornerRadius = UDim.new(0, 5)
+    c.Parent = b
 end
 
--- Интерактив кнопок
+-- Логика кнопок меню
 BtnLess.MouseButton1Click:Connect(function()
-    Config.AimFov = math.max(20, Config.AimFov - 15)
-    FovText.Text = "Радиус FOV: " .. tostring(Config.AimFov)
+    Config.AimFov = math.max(30, Config.AimFov - 20)
 end)
 
 BtnMore.MouseButton1Click:Connect(function()
-    Config.AimFov = math.min(600, Config.AimFov + 15)
-    FovText.Text = "Радиус FOV: " .. tostring(Config.AimFov)
+    Config.AimFov = math.min(400, Config.AimFov + 20)
 end)
 
 BtnESP.MouseButton1Click:Connect(function()
     Config.WallHackEnabled = not Config.WallHackEnabled
     if Config.WallHackEnabled then
-        BtnESP.Text = "ВХ (ESP): ВКЛ"
-        BtnESP.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
+        BtnESP.Text = "ВХ: ВКЛ"
+        BtnESP.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
     else
-        BtnESP.Text = "ВХ (ESP): ВЫКЛ"
-        BtnESP.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+        BtnESP.Text = "ВХ: ВЫКЛ"
+        BtnESP.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
         for _, p in ipairs(Players:GetPlayers()) do
-            if p.Character and p.Character:FindFirstChild("SylentESP") then
-                p.Character.SylentESP:Destroy()
+            if p.Character and p.Character:FindFirstChild("BlockStrikeESP") then
+                p.Character.BlockStrikeESP:Destroy()
             end
         end
     end
 end)
 
-BtnSpeed.MouseButton1Click:Connect(function()
-    Config.SpeedHackEnabled = not Config.SpeedHackEnabled
-    if Config.SpeedHackEnabled then
-        BtnSpeed.Text = "Скорость: ВКЛ"
-        BtnSpeed.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
-    else
-        BtnSpeed.Text = "Скорость: ВЫКЛ"
-        BtnSpeed.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = 16
-        end
+-- Отслеживание нажатий на правую часть экрана (Зона стрельбы на iPad)
+UserInputService.TouchStarted:Connect(function(touch, gameProcessed)
+    -- Если игрок нажал на экран в районе кнопок атаки/прицела (правая половина экрана)
+    if touch.Position.X > Camera.ViewportSize.X / 2 then
+        Config.IsAiming = true
     end
 end)
 
--- Стабильный Мобильный ВХ (BoxHandleAdornment работает на любых iOS без просадки FPS)
-local function CreateMobileESP(character)
-    if not character:FindFirstChild("SylentESP") and character:FindFirstChild("HumanoidRootPart") then
+UserInputService.TouchEnded:Connect(function(touch, gameProcessed)
+    if touch.Position.X > Camera.ViewportSize.X / 2 then
+        Config.IsAiming = false
+    end
+end)
+
+-- Стабильный Мобильный ВХ через Adornments
+local function ApplyMobileESP(character)
+    if not character:FindFirstChild("BlockStrikeESP") and character:FindFirstChild("HumanoidRootPart") then
         local box = Instance.new("BoxHandleAdornment")
-        box.Name = "SylentESP"
-        box.Size = character.HumanoidRootPart.Size + Vector3.new(1, 2, 1)
+        box.Name = "BlockStrikeESP"
+        box.Size = Vector3.new(2, 4, 2) -- Идеальный размер под хитбокс модели
         box.AlwaysOnTop = true
-        box.ZIndex = 5
+        box.ZIndex = 6
         box.Adornee = character.HumanoidRootPart
         box.Color3 = Color3.fromRGB(255, 0, 0)
         box.Transparency = 0.6
@@ -195,11 +178,11 @@ local function CreateMobileESP(character)
     end
 end
 
--- Поиск цели относительно центра экрана iPad
+-- Поиск цели в FOV
 local function GetClosestTarget()
     local closestPlayer = nil
     local shortestDistance = Config.AimFov
-    local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local screenCenter = Camera.ViewportSize / 2
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
@@ -219,33 +202,34 @@ local function GetClosestTarget()
     return closestPlayer
 end
 
--- Потоковый цикл
+-- Главный цикл отрисовки и наведения
 RunService.RenderStepped:Connect(function()
-    -- Центрирование круга
     local center = Camera.ViewportSize / 2
     FovFrame.Position = UDim2.new(0, center.X, 0, center.Y)
     FovFrame.Size = UDim2.new(0, Config.AimFov * 2, 0, Config.AimFov * 2)
 
-    -- Скорость персонажа
+    -- Применение Спидхака
     if Config.SpeedHackEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid.WalkSpeed = Config.WalkSpeed
     end
 
-    -- Отрисовка ВХ
+    -- Применение ВХ
     if Config.WallHackEnabled then
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character then
-                CreateMobileESP(player.Character)
+                ApplyMobileESP(player.Character)
             end
         end
     end
 
-    -- Наводка (AimBot зажимает цель автоматически, как только она входит в розовый круг)
-    if Config.AimEnabled then
+    -- Работа AimBot при таче по правой стороне экрана (стрельба)
+    if Config.AimEnabled and Config.IsAiming then
         local target = GetClosestTarget()
         if target and target.Character and target.Character:FindFirstChild("Head") then
+            local currentCFrame = Camera.CFrame
             local targetPos = target.Character.Head.Position
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
+            local goalCFrame = CFrame.new(currentCFrame.Position, targetPos)
+            Camera.CFrame = currentCFrame:Lerp(goalCFrame, 1 / Config.AimSmooth)
         end
     end
 end)
