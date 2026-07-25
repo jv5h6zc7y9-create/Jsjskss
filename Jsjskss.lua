@@ -6,7 +6,6 @@ local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 local CurrentCamera = Workspace.CurrentCamera
-local Mouse = LocalPlayer:GetMouse()
 
 -- // Настройки (Config)
 local Configuration = {
@@ -18,17 +17,17 @@ local Configuration = {
     FillTransparency = 0.4,
     OutlineTransparency = 0.2,
 
-    -- Настройки Аимбота (Aimbot)
+    -- Настройки Аимбота (Aimbot) для мобилок (Delta / iPad)
     AimbotEnabled = true,                        -- Включен ли аимбот
-    AimKey = Enum.UserInputType.MouseButton2,    -- Кнопка активации (Правая кнопка мыши ПКМ / зажать для работы)
-    AimPart = "Head",                            -- Куда целиться: "Head" (голова) или "HumanoidRootPart" (центр тела)
-    Smoothness = 5,                              -- Плавность наводки (чем больше число, тем плавнее и мягче доводка; 1 — моментальный snap)
-    FOV = 150                                    -- Радиус зоны захвата (FOV круга на экране в пикселях)
+    AimPart = "Head",                            -- Куда целиться: "Head" или "HumanoidRootPart"
+    Smoothness = 4,                              -- Плавность наводки (чем меньше, тем быстрее)
+    FOV = 180,                                   -- Радиус круга захвата в центре экрана
+    ShowFOV = true                               -- Показывать ли круг FOV по центру экрана
 }
 
--- // Создание визуального круга FOV для аимбота
+-- // Создание визуального круга FOV точно по центру экрана
 local FOVCircle = Drawing.new("Circle")
-FOVCircle.Visible = true
+FOVCircle.Visible = Configuration.ShowFOV
 FOVCircle.Transparency = 0.7
 FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 FOVCircle.Thickness = 1
@@ -58,17 +57,19 @@ local function CleanupESP(player)
     end
 end
 
--- // Функция поиска лучшей цели для аимбота (внутри FOV и видимой)
-local function GetClosestPlayerInFOV()
+-- // Функция поиска лучшей цели в центре экрана (для мобильных устройств)
+local function GetClosestPlayerToCenter()
     local closestTarget = nil
     local shortestDistance = Configuration.FOV
 
     local localCharacter = LocalPlayer.Character
     if not localCharacter or not localCharacter:FindFirstChild("HumanoidRootPart") then return nil end
 
+    local viewportSize = CurrentCamera.ViewportSize
+    local screenCenter = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
+
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
-            -- Проверка команд
             local isAlly = (player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team)
             if not (Configuration.TeamCheck and isAlly) then
                 local character = player.Character
@@ -76,16 +77,14 @@ local function GetClosestPlayerInFOV()
                 local targetPart = character:FindFirstChild(Configuration.AimPart)
 
                 if humanoid and humanoid.Health > 0 and targetPart then
-                    -- Проекция позиции цели с 3D мира на 2D экран
                     local screenPoint, onScreen = CurrentCamera:WorldToViewportPoint(targetPart.Position)
 
                     if onScreen then
-                        local mousePosition = Vector2.new(Mouse.X, Mouse.Y)
                         local screenPosition = Vector2.new(screenPoint.X, screenPoint.Y)
-                        local distanceFromMouse = (screenPosition - mousePosition).Magnitude
+                        local distanceFromCenter = (screenPosition - screenCenter).Magnitude
 
-                        if distanceFromMouse < shortestDistance then
-                            shortestDistance = distanceFromMouse
+                        if distanceFromCenter < shortestDistance then
+                            shortestDistance = distanceFromCenter
                             closestTarget = targetPart
                         end
                     end
@@ -97,7 +96,7 @@ local function GetClosestPlayerInFOV()
     return closestTarget
 end
 
--- // Функция создания и динамического обновления ESP для конкретного игрока
+-- // Функция создания и динамического обновления ESP
 local function InitializeESP(player)
     if player == LocalPlayer then return end
 
@@ -195,30 +194,19 @@ end
 Players.PlayerAdded:Connect(InitializeESP)
 Players.PlayerRemoving:Connect(CleanupESP)
 
--- // Главный поток для Аимбота и отрисовки FOV
+-- // Главный цикл аимбота и центровки FOV для iPad / Delta
 RunService.RenderStepped:Connect(function()
-    -- Обновляем позицию круга FOV по центру экрана (под курсор мыши)
-    FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + 36) -- +36 компенсирует верхнюю панель Roblox на ПК/мобилках
+    local viewportSize = CurrentCamera.ViewportSize
+    FOVCircle.Position = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
     FOVCircle.Radius = Configuration.FOV
+    FOVCircle.Visible = Configuration.ShowFOV
 
-    -- Проверяем зажата ли клавиша аимбота
-    local isAiming = false
-    if typeof(Configuration.AimKey) == "EnumItem" then
-        if Configuration.AimKey.EnumType == Enum.UserInputType then
-            isAiming = UserInputService:IsMouseButtonPressed(Configuration.AimKey)
-        elseif Configuration.AimKey.EnumType == Enum.KeyCode then
-            isAiming = UserInputService:IsKeyDown(Configuration.AimKey)
-        end
-    end
-
-    if Configuration.AimbotEnabled and isAiming then
-        local targetPart = GetClosestPlayerInFOV()
+    if Configuration.AimbotEnabled then
+        -- На телефоне/айпаде без мыши аимбот работает постоянно, когда враг попадает в центральный круг FOV
+        local targetPart = GetClosestPlayerToCenter()
         if targetPart then
-            -- Плавное перемещение камеры на цель
             local currentCFrame = CurrentCamera.CFrame
             local targetCFrame = CFrame.new(currentCFrame.Position, targetPart.Position)
-            
-            -- Интерполяция для плавности
             CurrentCamera.CFrame = currentCFrame:Lerp(targetCFrame, 1 / math.max(Configuration.Smoothness, 1))
         end
     end
